@@ -1,0 +1,23 @@
+/* Public registration form. Minimal, theme-friendly, accessible (MP §34, §35). */
+.dms-form { max-width: 42rem; }
+.dms-section { border: 1px solid #c3c4c7; border-radius: 6px; padding: 1rem 1.25rem; margin: 0 0 1.25rem; }
+.dms-section legend { font-weight: 600; padding: 0 .4rem; }
+.dms-field { margin: 0 0 1rem; display: flex; flex-direction: column; gap: .3rem; }
+.dms-field--checkbox { flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: .5rem; }
+.dms-field--checkbox .dms-error { flex-basis: 100%; }
+.dms-field input:not([type="checkbox"]), .dms-field select, .dms-field textarea { width: 100%; max-width: 100%; padding: .55rem .65rem; font-size: 1rem; border: 1px solid #8c8f94; border-radius: 4px; box-sizing: border-box; }
+.dms-field :focus-visible, .dms-submit:focus-visible, .dms-link-button:focus-visible { outline: 3px solid #2271b1; outline-offset: 2px; }
+.dms-field [aria-invalid="true"] { border-color: #b32d2e; }
+.dms-required { color: #b32d2e; }
+.dms-error { color: #b32d2e; margin: 0; font-size: .9rem; min-height: 0; }
+.dms-error:empty { display: none; }
+.dms-alert { border-left: 4px solid #b32d2e; background: #fcf0f1; padding: .75rem 1rem; margin: 0 0 1rem; }
+.dms-success { border-left: 4px solid #00a32a; background: #edfaef; padding: 1rem; }
+.dms-submit { padding: .7rem 1.4rem; font-size: 1rem; border: 0; border-radius: 4px; background: #2271b1; color: #fff; cursor: pointer; }
+.dms-submit[disabled] { opacity: .6; cursor: wait; }
+.dms-link-button { background: none; border: 0; padding: 0; color: #2271b1; text-decoration: underline; cursor: pointer; }
+.dms-link-button[disabled] { color: #646970; cursor: not-allowed; text-decoration: none; }
+.dms-resend-timer { margin-left: .5rem; color: #50575e; font-size: .9rem; }
+.dms-captcha { margin: 0 0 1rem; }
+/* Honeypot: off-screen for people, still present for bots. */
+.dms-hp { position: absolute !important; left: -10000px !important; width: 1px; height: 1px; overflow: hidden; }

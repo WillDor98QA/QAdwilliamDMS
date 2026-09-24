@@ -1,0 +1,30 @@
+# Dependencies
+/vendor/
+/plugin/data-management-system/vendor/
+/node_modules/
+
+# Secrets / local config — never commit
+.env
+.env.*
+!.env.example
+tests/wp-tests-config.local.php
+
+# Test / tool output
+/.phpunit.cache/
+/.phpunit.result.cache
+/coverage/
+/build/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Private test MySQL server (bin/test-db.sh)
+/.dev/
+
+# Playwright MCP snapshots/logs
+/.playwright-mcp/
+
+# Third-party vendor documents — kept out of the public repo
+NPONTU_SMS_API_DOCUMENT.pdf

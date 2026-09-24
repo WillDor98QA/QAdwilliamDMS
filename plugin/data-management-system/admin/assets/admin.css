@@ -1,0 +1,78 @@
+/* Data Management admin screens — WordPress admin look, accessible states. */
+.dms-wrap .dms-card { background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 12px 16px; margin: 16px 0; }
+.dms-record-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+.dms-record-grid .dms-card { margin: 0; }
+.dms-dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0 0 12px; }
+.dms-dl dt { font-weight: 600; color: #50575e; }
+.dms-dl dd { margin: 0; overflow-wrap: anywhere; }
+.dms-status { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; background: #f0f0f1; color: #1d2327; vertical-align: middle; }
+.dms-status--pending { background: #fcf9e8; color: #6b4e00; }
+.dms-status--assigned { background: #e9f0f8; color: #135e96; }
+.dms-status--under_review { background: #ecf3fa; color: #0a4b78; }
+.dms-status--approved { background: #edfaef; color: #00692a; }
+.dms-status--disapproved { background: #fcf0f1; color: #8a2424; }
+.dms-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; background: #2271b1; color: #fff; font-size: 11px; }
+.dms-badge--muted { background: #dcdcde; color: #1d2327; }
+.dms-actions .dms-action-form { margin: 0 0 12px; padding: 0 0 12px; border-bottom: 1px solid #f0f0f1; }
+.dms-actions label { display: block; margin: 6px 0 2px; font-weight: 600; }
+.dms-button-danger, .button.dms-button-danger { background: #b32d2e !important; border-color: #b32d2e !important; color: #fff !important; }
+.dms-button-danger:focus-visible { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #b32d2e !important; }
+.dms-locked { color: #50575e; }
+.dms-timeline { margin: 0; padding-left: 20px; }
+.dms-timeline li { margin: 0 0 10px; }
+.dms-timeline time { color: #50575e; }
+.dms-reason { font-style: italic; }
+.dms-changes { margin: 4px 0 0 16px; list-style: disc; }
+.dms-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin: 16px 0; }
+.dms-tile { display: flex; flex-direction: column; gap: 6px; padding: 16px; background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; text-decoration: none; color: #1d2327; }
+.dms-tile:focus-visible { outline: 2px solid #2271b1; outline-offset: 2px; }
+.dms-tile__label { color: #50575e; }
+.dms-tile__value { font-size: 28px; font-weight: 600; }
+.dms-tile--alert { border-left: 4px solid #d63638; }
+.dms-filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+.dms-filters select, .dms-filters input[type="date"] { max-width: 180px; }
+.dms-inline-form { display: inline; }
+.dms-check { display: block; margin: 2px 0; }
+.dms-permission-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.dms-permission-grid .dms-card { margin: 0; }
+.dms-form-fields input[type="text"] { max-width: 220px; }
+.dms-audit-details pre { max-height: 240px; overflow: auto; white-space: pre-wrap; background: #f6f7f7; padding: 8px; }
+.dms-confirm-panel { background: #fff; border: 1px solid #c3c4c7; border-left: 4px solid #2271b1; padding: 12px 16px; max-width: 640px; }
+.dms-confirm-panel--danger { border-left-color: #b32d2e; }
+.dms-notice-list { list-style: disc; margin-left: 20px; }
+.dms-required { color: #b32d2e; }
+/* Confirmation dialog: dimmed background (ARCH §74). */
+.dms-modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .55); z-index: 100000; display: flex; align-items: center; justify-content: center; }
+.dms-modal { background: #fff; max-width: 480px; width: calc(100% - 32px); padding: 20px 24px; border-radius: 6px; box-shadow: 0 10px 30px rgba(0, 0, 0, .3); }
+.dms-modal h2 { margin-top: 0; }
+.dms-modal-actions { text-align: right; margin-top: 16px; }
+body.dms-modal-open { overflow: hidden; }
+
+/* Analytics charts (ARCH §9). Palette validated with the dataviz checks:
+   approved = series 1 blue, disapproved = series 2 orange (CVD ΔE 24.7, both ≥ 3:1). */
+.dms-analytics { --dms-series-1: #2a78d6; --dms-series-2: #eb6834; --dms-track: #f0f0f1; --dms-text-2: #50575e; }
+.dms-chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+.dms-chart-grid .dms-card { margin: 0; }
+.dms-bars { list-style: none; margin: 0 0 8px; padding: 0; }
+.dms-bars__row { display: grid; grid-template-columns: minmax(90px, 30%) 1fr auto; align-items: center; gap: 8px; margin: 0; padding: 4px 0; }
+.dms-bars__label { color: #1d2327; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dms-bars__track { display: block; height: 14px; }
+.dms-bars__bar { display: block; height: 100%; background: var(--dms-series-1); border-radius: 0 4px 4px 0; min-width: 2px; }
+.dms-bars__value { color: var(--dms-text-2); font-variant-numeric: tabular-nums; min-width: 3ch; text-align: right; }
+.dms-legend { display: flex; gap: 16px; list-style: none; margin: 0 0 8px; padding: 0; color: #1d2327; }
+.dms-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.dms-swatch--approved { background: var(--dms-series-1); }
+.dms-swatch--disapproved { background: var(--dms-series-2); }
+.dms-columns { display: flex; align-items: flex-end; gap: 6px; height: 180px; padding: 16px 0 22px; border-bottom: 1px solid #c3c4c7; position: relative; overflow-x: auto; }
+.dms-columns__group { flex: 1 0 34px; display: flex; flex-direction: column; align-items: center; height: 100%; position: relative; }
+.dms-columns__bars { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 2px; }
+.dms-columns__bar { width: 10px; border-radius: 4px 4px 0 0; min-height: 0; position: relative; }
+.dms-columns__bar--empty { height: 0; }
+.dms-columns__value { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); padding-bottom: 2px; font-size: 11px; line-height: 1; color: var(--dms-text-2); font-variant-numeric: tabular-nums; }
+.dms-columns__bar--approved { background: var(--dms-series-1); }
+.dms-columns__bar--disapproved { background: var(--dms-series-2); }
+.dms-columns__label { position: absolute; bottom: -20px; font-size: 11px; color: var(--dms-text-2); white-space: nowrap; }
+.dms-columns__group:hover .dms-columns__bar, .dms-bars__row:hover .dms-bars__bar { filter: brightness(0.85); }
+.dms-table-view { margin-top: 8px; }
+.dms-table-view summary { cursor: pointer; color: #2271b1; }
+@media (forced-colors: active) { .dms-bars__bar, .dms-columns__bar, .dms-swatch { forced-color-adjust: none; border: 1px solid CanvasText; } }

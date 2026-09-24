@@ -1,0 +1,40 @@
+{
+    "name": "qadwilliam/data-management-system",
+    "description": "WordPress Data Management & Approval Platform \u2014 plugin, tests and tooling.",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.1"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "DMS\\": "plugin/data-management-system/includes/",
+            "DMS\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "roots/wordpress-core-installer": true
+        }
+    },
+    "require-dev": {
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.2",
+        "phpunit/phpunit": "^9.6",
+        "roots/wordpress-no-content": "^7.1",
+        "squizlabs/php_codesniffer": "^3.13",
+        "wp-coding-standards/wpcs": "^3.4",
+        "wp-phpunit/wp-phpunit": "^7.1",
+        "yoast/phpunit-polyfills": "^4.0"
+    },
+    "scripts": {
+        "test": [
+            "@test:unit",
+            "@test:integration"
+        ],
+        "test:unit": "phpunit",
+        "test:integration": "phpunit -c phpunit-integration.xml.dist",
+        "lint": "phpcs"
+    }
+}

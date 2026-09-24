@@ -1,0 +1,6 @@
+/*
+Theme Name: DMS Dev
+Description: Minimal theme for local testing of the Data Management System.
+Version: 1.0
+*/
+body { font-family: system-ui, sans-serif; margin: 0 auto; max-width: 52rem; padding: 1.5rem; line-height: 1.5; }

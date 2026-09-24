@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<ruleset name="DMS">
+    <description>WordPress coding standards (incl. security sniffs) for the DMS plugin.</description>
+    <file>plugin/data-management-system</file>
+    <arg name="extensions" value="php"/>
+    <arg name="colors"/>
+    <arg value="sp"/>
+    <config name="minimum_wp_version" value="6.4"/>
+    <config name="testVersion" value="8.1-"/>
+
+    <rule ref="WordPress-Extra">
+        <!-- PSR-4 class files (e.g. Plugin.php), not class-plugin.php. -->
+        <exclude name="WordPress.Files.FileName"/>
+        <!-- Typed properties/params and docblocks cover intent; no per-member doc noise. -->
+        <exclude name="Squiz.Commenting"/>
+        <exclude name="Generic.Commenting.DocComment.MissingShort"/>
+        <!-- Plugin tables are the application's primary storage (ARCH §22). -->
+        <exclude name="WordPress.DB.DirectDatabaseQuery"/>
+    </rule>
+    <rule ref="WordPress.Security"/>
+    <!-- Exception messages go to logs, never raw to the browser; the only place
+         one is displayed (Plugin::maybe_migrate) escapes it with esc_html(). -->
+    <rule ref="WordPress.Security.EscapeOutput.ExceptionNotEscaped">
+        <severity>0</severity>
+    </rule>
+    <!-- Capabilities come from the DMS permission registry (PermissionRegistry), not core. -->
+    <rule ref="WordPress.WP.Capabilities.Unknown">
+        <severity>0</severity>
+    </rule>
+    <rule ref="WordPress.DB.PreparedSQL"/>
+    <rule ref="WordPress.DB.PreparedSQLPlaceholders"/>
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <property name="text_domain" type="array"><element value="dms"/></property>
+        </properties>
+    </rule>
+</ruleset>
