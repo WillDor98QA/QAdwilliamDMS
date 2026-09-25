@@ -48,7 +48,14 @@ final class UserServiceTest extends \WP_UnitTestCase {
 	public function test_creates_native_wordpress_user_with_roles_regions_and_audit(): void {
 		$this->act_as_admin();
 		$h  = $this->make_hierarchy();
-		$id = Plugin::instance()->user_service()->create( $this->input( array( 'role_ids' => array( $this->officer_role() ), 'region_ids' => array( $h['region'] ) ) ) );
+		$id = Plugin::instance()->user_service()->create(
+			$this->input(
+				array(
+					'role_ids'   => array( $this->officer_role() ),
+					'region_ids' => array( $h['region'] ),
+				)
+			)
+		);
 
 		$user = get_user_by( 'id', $id );
 		$this->assertInstanceOf( \WP_User::class, $user );
@@ -75,7 +82,15 @@ final class UserServiceTest extends \WP_UnitTestCase {
 	public function test_validation_errors_are_reported_per_field(): void {
 		$this->act_as_admin();
 		try {
-			Plugin::instance()->user_service()->create( $this->input( array( 'email' => 'not-an-email', 'password' => 'short', 'first_name' => '' ) ) );
+			Plugin::instance()->user_service()->create(
+				$this->input(
+					array(
+						'email'      => 'not-an-email',
+						'password'   => 'short',
+						'first_name' => '',
+					)
+				)
+			);
 			$this->fail( 'Expected ValidationException' );
 		} catch ( ValidationException $e ) {
 			$this->assertEqualsCanonicalizing( array( 'email', 'password', 'first_name' ), array_keys( $e->errors ) );
@@ -121,9 +136,22 @@ final class UserServiceTest extends \WP_UnitTestCase {
 		$this->act_as_admin();
 		$a  = $this->make_hierarchy();
 		$b  = $this->make_hierarchy();
-		$id = Plugin::instance()->user_service()->create( $this->input( array( 'role_ids' => array( $this->officer_role() ), 'region_ids' => array( $a['region'] ) ) ) );
+		$id = Plugin::instance()->user_service()->create(
+			$this->input(
+				array(
+					'role_ids'   => array( $this->officer_role() ),
+					'region_ids' => array( $a['region'] ),
+				)
+			)
+		);
 
-		Plugin::instance()->user_service()->update( $id, array( 'region_ids' => array( $b['region'] ), 'first_name' => 'Kojo' ) );
+		Plugin::instance()->user_service()->update(
+			$id,
+			array(
+				'region_ids' => array( $b['region'] ),
+				'first_name' => 'Kojo',
+			)
+		);
 
 		$this->assertSame( array( $b['region'] ), Plugin::instance()->officer_regions()->active_region_ids( $id ) );
 		$this->assertSame( 'Kojo', get_user_meta( $id, 'first_name', true ) );
@@ -134,7 +162,14 @@ final class UserServiceTest extends \WP_UnitTestCase {
 	public function test_removing_all_regions_from_officer_is_rejected(): void {
 		$this->act_as_admin();
 		$h  = $this->make_hierarchy();
-		$id = Plugin::instance()->user_service()->create( $this->input( array( 'role_ids' => array( $this->officer_role() ), 'region_ids' => array( $h['region'] ) ) ) );
+		$id = Plugin::instance()->user_service()->create(
+			$this->input(
+				array(
+					'role_ids'   => array( $this->officer_role() ),
+					'region_ids' => array( $h['region'] ),
+				)
+			)
+		);
 		$this->expectException( ValidationException::class );
 		Plugin::instance()->user_service()->update( $id, array( 'region_ids' => array() ) );
 	}
@@ -142,7 +177,14 @@ final class UserServiceTest extends \WP_UnitTestCase {
 	public function test_disable_revokes_access_keeps_history_and_reports_outstanding_work(): void {
 		$admin = $this->act_as_admin();
 		$h     = $this->make_hierarchy();
-		$id    = Plugin::instance()->user_service()->create( $this->input( array( 'role_ids' => array( $this->officer_role() ), 'region_ids' => array( $h['region'] ) ) ) );
+		$id    = Plugin::instance()->user_service()->create(
+			$this->input(
+				array(
+					'role_ids'   => array( $this->officer_role() ),
+					'region_ids' => array( $h['region'] ),
+				)
+			)
+		);
 		$reg   = $this->make_registration( $h );
 		Plugin::instance()->registrations()->transition( $reg, Status::PENDING, Status::ASSIGNED, array( 'assigned_officer_id' => $id ) );
 
@@ -189,5 +231,110 @@ final class UserServiceTest extends \WP_UnitTestCase {
 		} catch ( ConflictException $e ) {
 			$this->assertSame( 'dms_last_administrator', $e->error_code() );
 		}
+	}
+
+	// ------------------------------------------------ remove from DMS (user decision 2026-09-25)
+
+	public function test_remove_takes_user_out_of_dms_keeps_account_and_history_and_can_be_added_back(): void {
+		global $wpdb;
+		$admin = $this->act_as_admin();
+		$h     = $this->make_hierarchy();
+		$id    = Plugin::instance()->user_service()->create(
+			$this->input(
+				array(
+					'role_ids'   => array( $this->officer_role() ),
+					'region_ids' => array( $h['region'] ),
+				)
+			)
+		);
+		$reg   = $this->make_registration( $h );
+		$repo  = Plugin::instance()->registrations();
+		$repo->transition( $reg, Status::PENDING, Status::ASSIGNED, array( 'assigned_officer_id' => $id ) );
+		$repo->transition( $reg, Status::ASSIGNED, Status::UNDER_REVIEW, array() );
+		$repo->transition( $reg, Status::UNDER_REVIEW, Status::APPROVED, array( 'approved_by' => $id ) );
+
+		Plugin::instance()->user_service()->remove( $id, 'Left the organization' );
+
+		$this->assertNotFalse( get_user_by( 'id', $id ), 'WordPress account kept' );
+		$this->assertSame( array(), Plugin::instance()->roles()->role_ids_for_user( $id ) );
+		$this->assertSame( array(), Plugin::instance()->officer_regions()->active_region_ids( $id ) );
+		$this->assertSame( '0', (string) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . Tables::name( Tables::USER_PROFILES ) . ' WHERE user_id = %d', $id ) ), 'DMS profile removed' );
+		$this->assertFalse( user_can( $id, 'review.approve' ), 'No DMS permissions left' );
+		$this->assertNotContains( \DMS\Database\Migrations\M004AddStaffWordPressRole::WP_ROLE, get_user_by( 'id', $id )->roles );
+		$record = $repo->get( $reg );
+		$this->assertSame( (string) $id, (string) $record->assigned_officer_id, 'History keeps the officer' );
+		$this->assertSame( (string) $id, (string) $record->approved_by );
+		$row = $this->audit_rows( AuditAction::USER_REMOVED, $id )[0];
+		$this->assertSame( (string) $admin, (string) $row->user_id );
+		$this->assertSame( 'Left the organization', $row->reason );
+
+		// Added back through the normal edit.
+		Plugin::instance()->user_service()->update(
+			$id,
+			array(
+				'role_ids'   => array( $this->officer_role() ),
+				'region_ids' => array( $h['region'] ),
+			)
+		);
+		$this->assertTrue( user_can( $id, 'review.approve' ) );
+		$this->assertContains( \DMS\Database\Migrations\M004AddStaffWordPressRole::WP_ROLE, get_user_by( 'id', $id )->roles, 'Staff role restored so they can open wp-admin' );
+	}
+
+	public function test_remove_is_refused_while_the_user_has_open_work(): void {
+		$this->act_as_admin();
+		$h   = $this->make_hierarchy();
+		$id  = Plugin::instance()->user_service()->create(
+			$this->input(
+				array(
+					'role_ids'   => array( $this->officer_role() ),
+					'region_ids' => array( $h['region'] ),
+				)
+			)
+		);
+		$reg = $this->make_registration( $h );
+		Plugin::instance()->registrations()->transition( $reg, Status::PENDING, Status::ASSIGNED, array( 'assigned_officer_id' => $id ) );
+		try {
+			Plugin::instance()->user_service()->remove( $id );
+			$this->fail( 'Open work must be reassigned first' );
+		} catch ( ConflictException $e ) {
+			$this->assertSame( 'dms_open_work', $e->error_code() );
+			$this->assertStringContainsString( 'Reassign it first', $e->getMessage() );
+		}
+		$this->assertNotSame( array(), Plugin::instance()->roles()->role_ids_for_user( $id ), 'Nothing changed' );
+	}
+
+	public function test_cannot_remove_self(): void {
+		$admin = $this->act_as_admin();
+		try {
+			Plugin::instance()->user_service()->remove( $admin );
+			$this->fail( 'Self-removal must be refused' );
+		} catch ( ConflictException $e ) {
+			$this->assertSame( 'dms_self_remove', $e->error_code() );
+		}
+		$this->assertNotSame( array(), Plugin::instance()->roles()->role_ids_for_user( $admin ) );
+	}
+
+	public function test_only_active_administrator_can_remove_a_disabled_administrator(): void {
+		global $wpdb;
+		$wpdb->query( 'DELETE ur FROM ' . Tables::name( Tables::USER_ROLES ) . ' ur INNER JOIN ' . Tables::name( Tables::ROLES ) . ' r ON r.id = ur.role_id WHERE r.is_system = 1' );
+		Plugin::instance()->capabilities()->flush();
+		$other = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		Plugin::instance()->roles()->assign_user( $other, (int) Plugin::instance()->roles()->find_by_slug( 'administrator' )->id );
+		$actor = $this->act_as_admin();
+		Plugin::instance()->user_service()->disable( $other );
+		$this->assertSame( 1, Plugin::instance()->roles()->count_system_role_members(), 'Only the actor is an active administrator' );
+
+		Plugin::instance()->user_service()->remove( $other );
+
+		$this->assertSame( array(), Plugin::instance()->roles()->role_ids_for_user( $other ), 'Removing a disabled administrator does not reduce the active ones' );
+		$this->assertTrue( user_can( $actor, 'users.delete' ) );
+	}
+
+	public function test_remove_requires_the_delete_users_permission(): void {
+		$this->act_as_admin();
+		$id = Plugin::instance()->user_service()->create( $this->input() );
+		$this->act_as( array( 'users.view', 'users.edit', 'users.disable' ) );
+		$this->expectException( AuthorizationException::class );
+		Plugin::instance()->user_service()->remove( $id );
 	}
 }

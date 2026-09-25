@@ -221,6 +221,10 @@ class UserService {
 					foreach ( $added_roles as $role_id ) {
 						$this->roles->assign_user( $user_id, $role_id );
 					}
+					if ( array() !== $added_roles && array() === $user->roles ) {
+						// Added back after removal: restore the staff role DMS gives its users, so they can open wp-admin.
+						$user->add_role( M004AddStaffWordPressRole::WP_ROLE );
+					}
 					foreach ( $removed_roles as $role_id ) {
 						$this->roles->remove_user( $user_id, $role_id );
 					}
@@ -312,6 +316,65 @@ class UserService {
 						'object_id'   => $user_id,
 					)
 				);
+			}
+		);
+		do_action( 'dms_officer_availability_changed', $user_id );
+	}
+
+	/**
+	 * Removes the user from DMS: every DMS role, region and the DMS profile are
+	 * removed and their sessions end. The WordPress account and all history
+	 * (registrations, approvals, audit) are kept, so past records keep their
+	 * name; the user can be given roles again later (user decision 2026-09-25).
+	 *
+	 * @throws ConflictException Own account, open work still assigned, or last active Administrator.
+	 */
+	public function remove( int $user_id, string $reason = '' ): void {
+		$this->authorizer->require( 'users.delete' );
+		if ( $user_id === $this->context->user_id() ) {
+			throw new ConflictException( __( 'You cannot remove your own account.', 'dms' ), 'self_remove' );
+		}
+		$this->manageable_user( $user_id );
+		$outstanding = $this->officer_regions->outstanding_count( $user_id );
+		if ( $outstanding > 0 ) {
+			throw new ConflictException(
+				/* translators: %d: number of registrations */
+				sprintf( _n( 'This user still has %d open registration. Reassign it first, then remove the user.', 'This user still has %d open registrations. Reassign them first, then remove the user.', $outstanding, 'dms' ), $outstanding ),
+				'open_work'
+			);
+		}
+		$role_ids = $this->roles->role_ids_for_user( $user_id );
+		if ( $this->profiles->is_active( $user_id ) ) {
+			// Only an active Administrator counts towards "at least one must remain" (same rule as disable).
+			$this->assert_not_last_admin_removal( $role_ids );
+		}
+		$region_ids = $this->officer_regions->active_region_ids( $user_id );
+
+		Transaction::run(
+			$this->db,
+			function () use ( $user_id, $reason, $role_ids, $region_ids ): void {
+				foreach ( $role_ids as $role_id ) {
+					$this->roles->remove_user( $user_id, (int) $role_id );
+				}
+				$this->officer_regions->set_regions( $user_id, array(), $this->context->user_id() );
+				$this->profiles->forget( $user_id );
+				$user = get_user_by( 'id', $user_id );
+				if ( $user ) {
+					$user->remove_role( M004AddStaffWordPressRole::WP_ROLE ); // Only the role DMS itself gave.
+				}
+				$this->audit->record(
+					AuditAction::USER_REMOVED,
+					array(
+						'object_type' => 'user',
+						'object_id'   => $user_id,
+						'reason'      => '' !== $reason ? sanitize_textarea_field( $reason ) : null,
+						'metadata'    => array(
+							'removed_role_ids'   => array_values( array_map( 'intval', $role_ids ) ),
+							'removed_region_ids' => array_values( array_map( 'intval', $region_ids ) ),
+						),
+					)
+				);
+				\WP_Session_Tokens::get_instance( $user_id )->destroy_all();
 			}
 		);
 		do_action( 'dms_officer_availability_changed', $user_id );

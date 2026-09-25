@@ -47,21 +47,54 @@ class RolesPage {
 			</div>
 			<hr class="wp-header-end">
 			<table class="widefat striped">
-				<thead><tr><th scope="col"><?php esc_html_e( 'Role', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Description', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Permissions', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Users', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Status', 'dms' ); ?></th></tr></thead>
+				<thead><tr><th scope="col"><?php esc_html_e( 'Role', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Description', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Permissions', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Users', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Status', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Actions', 'dms' ); ?></th></tr></thead>
 				<tbody>
 				<?php foreach ( $this->plugin->roles()->all() as $role ) : ?>
 					<tr>
 						<td><a href="<?php echo esc_url( admin_url( 'admin.php?page=dms-roles&role=' . $role->id ) ); ?>"><strong><?php echo esc_html( $role->name ); ?></strong></a><?php echo (int) $role->is_system ? ' <span class="dms-badge">' . esc_html__( 'Protected', 'dms' ) . '</span>' : ''; ?></td>
 						<td><?php echo esc_html( (string) $role->description ); ?></td>
 						<td><?php echo (int) $role->is_system ? esc_html__( 'All', 'dms' ) : esc_html( (string) count( $this->plugin->roles()->permissions( (int) $role->id ) ) ); ?></td>
-						<td><?php echo esc_html( (string) $this->plugin->roles()->user_count( (int) $role->id ) ); ?></td>
+						<?php $users = $this->plugin->roles()->user_count( (int) $role->id ); ?>
+						<td><?php echo esc_html( (string) $users ); ?></td>
 						<td><span class="dms-pill dms-pill--<?php echo 'ACTIVE' === $role->status ? 'green' : 'gray'; ?>"><?php echo esc_html( 'ACTIVE' === $role->status ? __( 'Active', 'dms' ) : __( 'Inactive', 'dms' ) ); ?></span></td>
+						<td><?php echo $this->row_actions( $role, $users ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped parts. ?></td>
 					</tr>
 				<?php endforeach; ?>
 				</tbody>
 			</table>
 		</div>
 		<?php
+	}
+
+	/** Edit (or View) and Delete. Delete follows the service rules and says why when it is not possible. */
+	private function row_actions( object $role, int $users ): string {
+		$system = (bool) (int) $role->is_system;
+		$out    = array(
+			sprintf(
+				'<a class="button button-small" href="%1$s">%2$s</a>',
+				esc_url( admin_url( 'admin.php?page=dms-roles&role=' . $role->id ) ),
+				current_user_can( 'roles.edit' ) && ! $system ? esc_html__( 'Edit', 'dms' ) : esc_html__( 'View', 'dms' )
+			),
+		);
+		if ( current_user_can( 'roles.delete' ) ) {
+			if ( $system || $users > 0 ) {
+				/* translators: %d: number of users */
+				$why   = $system ? __( 'Protected role', 'dms' ) : sprintf( _n( 'Assigned to %d user', 'Assigned to %d users', $users, 'dms' ), $users );
+				$out[] = sprintf( '<button type="button" class="button button-small" disabled>%1$s</button><span class="dms-row-actions__why">%2$s</span>', esc_html__( 'Delete', 'dms' ), esc_html( $why ) );
+			} else {
+				$out[] = sprintf(
+					'<form method="post" action="%1$s" class="dms-inline-form" data-dms-confirm="%2$s" data-dms-confirm-label="%3$s">%4$s<input type="hidden" name="role_id" value="%5$d"><button type="submit" class="button button-small dms-button-danger">%6$s</button></form>',
+					esc_url( admin_url( 'admin-post.php' ) ),
+					/* translators: %s: role name */
+					esc_attr( sprintf( __( 'Delete the role "%s"? This cannot be undone.', 'dms' ), $role->name ) ),
+					esc_attr__( 'Delete role', 'dms' ),
+					AdminActions::fields( 'role_delete' ),
+					(int) $role->id,
+					esc_html__( 'Delete', 'dms' )
+				);
+			}
+		}
+		return '<div class="dms-row-actions">' . implode( '', $out ) . '</div>';
 	}
 
 	private function render_form( int $role_id ): void {

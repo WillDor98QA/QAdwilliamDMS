@@ -740,3 +740,10 @@ body.dms-modal-open { overflow: hidden; }
 	.dms-app .dms-pager .tablenav-pages { width: 100%; justify-content: space-between; }
 	.dms-app .dms-pager .tablenav-pages.one-page { justify-content: flex-end; }
 }
+
+/* Row actions (Users, Roles). */
+.dms-app .dms-row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.dms-app .dms-row-actions .dms-inline-form { margin: 0; }
+.dms-app .button.button-small { min-height: 30px; padding: 0 10px; font-size: 12px; }
+.dms-app .button.button-small[disabled] { cursor: not-allowed; opacity: .55; }
+.dms-app .dms-row-actions__why { color: var(--dms-muted); font-size: 11.5px; }

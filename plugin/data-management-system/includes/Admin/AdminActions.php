@@ -32,6 +32,7 @@ class AdminActions {
 		'assign_pending'       => 'assign_pending',
 		'user_save'            => 'user_save',
 		'user_status'          => 'user_status',
+		'user_remove'          => 'user_remove',
 		'role_save'            => 'role_save',
 		'role_delete'          => 'role_delete',
 		'form_save'            => 'form_save',
@@ -257,6 +258,12 @@ class AdminActions {
 			Notices::success( __( 'User enabled.', 'dms' ) );
 		}
 		return $back;
+	}
+
+	private function user_remove( array $p, string $back ): string {
+		$this->plugin->user_service()->remove( absint( $p['user_id'] ?? 0 ), (string) ( $p['reason'] ?? '' ) );
+		Notices::success( __( 'User removed from Data Management. Their WordPress account and history are kept.', 'dms' ) );
+		return admin_url( 'admin.php?page=dms-users' );
 	}
 
 	private function role_save( array $p, string $back ): string {

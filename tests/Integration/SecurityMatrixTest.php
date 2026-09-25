@@ -113,6 +113,7 @@ final class SecurityMatrixTest extends \WP_UnitTestCase {
 			array( 'user_save', array( 'username' => 'intruder', 'password' => 'Str0ng-Passw0rd!x', 'email' => 'intruder@example.org', 'first_name' => 'I', 'last_name' => 'N', 'role_ids' => array( $this->role ) ) ),
 			array( 'user_save', array( 'user_id' => $this->officer, 'email' => 'changed@example.org', 'first_name' => 'X', 'last_name' => 'Y', 'role_ids' => array( $this->role ) ) ),
 			array( 'user_status', array( 'user_id' => $this->officer, 'status' => 'disable', 'reason' => 'Left' ) ),
+			array( 'user_remove', array( 'user_id' => $this->officer, 'reason' => 'Left' ) ),
 			array( 'role_save', array( 'name' => 'Intruders', 'permissions' => array( 'registrations.view', 'users.create' ) ) ),
 			array( 'role_save', array( 'role_id' => $this->role, 'name' => 'Renamed', 'permissions' => array( 'users.create' ) ) ),
 			array( 'role_delete', array( 'role_id' => $this->role ) ),

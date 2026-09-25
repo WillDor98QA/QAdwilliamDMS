@@ -60,6 +60,15 @@ class UserProfileRepository {
 		}
 	}
 
+	/** Deletes the profile row (user removed from DMS). The WordPress account is untouched. */
+	public function forget( int $user_id ): void {
+		$deleted = $this->db->delete( Tables::name( Tables::USER_PROFILES ), array( 'user_id' => $user_id ), array( '%d' ) );
+		if ( false === $deleted ) {
+			throw new \RuntimeException( 'Could not remove user profile: ' . $this->db->last_error );
+		}
+		$this->flush( $user_id );
+	}
+
 	public function set_status( int $user_id, string $status, ?int $changed_by ): void {
 		if ( ! in_array( $status, array( self::STATUS_ACTIVE, self::STATUS_DISABLED ), true ) ) {
 			throw new \InvalidArgumentException( "Unknown user status {$status}" );

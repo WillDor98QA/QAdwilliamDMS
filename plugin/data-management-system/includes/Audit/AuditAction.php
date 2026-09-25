@@ -62,6 +62,7 @@ final class AuditAction {
 	public const USER_ENABLED         = 'USER_ENABLED';
 	public const USER_ROLES_CHANGED   = 'USER_ROLES_CHANGED';
 	public const USER_REGIONS_CHANGED = 'USER_REGIONS_CHANGED';
+	public const USER_REMOVED         = 'USER_REMOVED';
 	public const ROLE_CREATED         = 'ROLE_CREATED';
 	public const ROLE_UPDATED         = 'ROLE_UPDATED';
 	public const ROLE_DELETED         = 'ROLE_DELETED';
