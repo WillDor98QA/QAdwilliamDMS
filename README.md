@@ -2,9 +2,7 @@
 
 Registration data collection, approval workflow, electoral master data and audit for a single organization.
 
-- Specification: `wordpress-data-management-platform-architecture (1).md`
-- Implementation brief: `Master Prompt.md`
-- Decisions and phase notes: `docs/`
+The specification, implementation brief, decisions and phase notes are kept privately and are not part of this repository.
 
 ## Layout
 
@@ -12,7 +10,6 @@ Registration data collection, approval workflow, electoral master data and audit
 plugin/data-management-system/   the WordPress plugin (symlink or copy into wp-content/plugins/)
 tests/Unit                       pure PHP tests (no WordPress, no DB)
 tests/Integration                WordPress + MySQL tests (wp-phpunit)
-docs/                            discovery, decisions, phase notes, traceability
 ```
 
 ## Commands
