@@ -32,6 +32,7 @@
 		var alertBox = form.querySelector( '[data-dms-alert]' );
 		var submitBtn = form.querySelector( '[data-dms-submit]' );
 		var success = form.parentNode.querySelector( '[data-dms-success]' );
+		var submitLabel = submitBtn.textContent;
 
 		function refreshConfig() {
 			return api( 'form' ).then( function ( r ) {
@@ -242,7 +243,7 @@
 
 				if ( r.status === 201 ) {
 					form.hidden = true;
-					success.textContent = fmt( t.success, r.body.registration_number );
+					success.querySelector( '[data-dms-success-message]' ).textContent = fmt( t.success, r.body.registration_number );
 					success.hidden = false;
 					success.focus();
 					return;
@@ -301,6 +302,38 @@
 				refreshConfig().then( send );
 			}
 		} );
+
+		// ---- Register another person -------------------------------------
+		// Returns to an empty form. The server still applies every limit and
+		// requires a fresh OTP and captcha for the next registration.
+		function startAgain() {
+			form.reset();
+			clearErrors();
+			reset( selects.constituency );
+			reset( selects.polling_station );
+			clearInterval( state.timer );
+			state.otpRequestId = null;
+			submitBtn.textContent = submitLabel;
+			var step = form.querySelector( '[data-dms-otp]' );
+			if ( step ) {
+				step.hidden = true;
+				step.querySelector( '[data-dms-resend-timer]' ).textContent = '';
+			}
+			var captcha = form.querySelector( '.cf-turnstile' );
+			if ( captcha && window.turnstile ) {
+				window.turnstile.reset( captcha );
+			}
+			success.hidden = true;
+			success.querySelector( '[data-dms-success-message]' ).textContent = '';
+			form.hidden = false;
+			refreshConfig();
+			var first = form.querySelector( 'input:not([type="hidden"]):not([tabindex="-1"]), select' );
+			if ( first ) {
+				first.focus();
+			}
+			form.scrollIntoView( { block: 'start' } );
+		}
+		success.querySelector( '[data-dms-again]' ).addEventListener( 'click', startAgain );
 
 		refreshConfig();
 	}

@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Data Management System
  * Description:       Public registration, approval workflow, electoral master data, audit trail and reporting.
- * Version:           0.1.0
+ * Version:           0.1.1
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            QAdwilliam
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DMS_VERSION', '0.1.0' );
+define( 'DMS_VERSION', '0.1.1' );
 define( 'DMS_PLUGIN_FILE', __FILE__ );
 define( 'DMS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 

@@ -13,6 +13,10 @@
 .dms-error:empty { display: none; }
 .dms-alert { border-left: 4px solid #b32d2e; background: #fcf0f1; padding: .75rem 1rem; margin: 0 0 1rem; }
 .dms-success { border-left: 4px solid #00a32a; background: #edfaef; padding: 1rem; }
+.dms-success-message { margin: 0 0 1rem; }
+.dms-success-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; }
+.dms-home-link { color: #2271b1; }
+.dms-home-link:focus-visible { outline: 3px solid #2271b1; outline-offset: 2px; }
 .dms-submit { padding: .7rem 1.4rem; font-size: 1rem; border: 0; border-radius: 4px; background: #2271b1; color: #fff; cursor: pointer; }
 .dms-submit[disabled] { opacity: .6; cursor: wait; }
 .dms-link-button { background: none; border: 0; padding: 0; color: #2271b1; text-decoration: underline; cursor: pointer; }

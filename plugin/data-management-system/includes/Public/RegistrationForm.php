@@ -99,7 +99,13 @@ class RegistrationForm {
 				<button type="submit" class="dms-submit" data-dms-submit><?php echo esc_html( $otp_on ? __( 'Continue to phone verification', 'dms' ) : __( 'Submit registration', 'dms' ) ); ?></button>
 			</div>
 		</form>
-		<div class="dms-success" data-dms-success role="status" tabindex="-1" hidden></div>
+		<div class="dms-success" data-dms-success tabindex="-1" hidden>
+			<p class="dms-success-message" data-dms-success-message role="status"></p>
+			<div class="dms-success-actions">
+				<button type="button" class="dms-submit" data-dms-again><?php esc_html_e( 'Register another person', 'dms' ); ?></button>
+				<a class="dms-home-link" href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php esc_html_e( 'Return to home', 'dms' ); ?></a>
+			</div>
+		</div>
 		<template data-dms-otp-template><?php echo $this->otp_step_markup(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside. ?></template>
 		<?php
 		return (string) ob_get_clean();

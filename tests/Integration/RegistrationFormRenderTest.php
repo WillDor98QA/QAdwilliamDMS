@@ -67,6 +67,15 @@ final class RegistrationFormRenderTest extends \WP_UnitTestCase {
 		$this->assertStringContainsString( 'role="alert"', $form );
 	}
 
+	public function test_success_box_offers_register_another_and_return_home(): void {
+		$html = do_shortcode( '[dms_registration_form]' );
+		$this->assertSame( 1, preg_match( '#<div class="dms-success" data-dms-success tabindex="-1" hidden>.*?</div>\s*</div>#s', $html, $m ) );
+		$box = $m[0];
+		$this->assertStringContainsString( 'data-dms-success-message role="status"', $box );
+		$this->assertMatchesRegularExpression( '#<button type="button"[^>]*data-dms-again>Register another person</button>#', $box );
+		$this->assertStringContainsString( 'href="' . esc_url( home_url( '/' ) ) . '">Return to home</a>', $box );
+	}
+
 	public function test_regions_rendered_but_lower_levels_load_on_demand(): void {
 		$form = $this->form_html();
 		$this->assertStringContainsString( 'Region ', $form );
