@@ -28,3 +28,7 @@ tests/wp-tests-config.local.php
 
 # Third-party vendor documents — kept out of the public repo
 NPONTU_SMS_API_DOCUMENT.pdf
+
+# Project notes, specs and reports stay local — only README.md is published
+*.md
+!README.md
