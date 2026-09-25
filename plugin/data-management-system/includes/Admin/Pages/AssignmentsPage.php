@@ -27,13 +27,21 @@ class AssignmentsPage {
 		$exceptions = $this->plugin->assignment_exceptions()->open_list( 200 );
 		?>
 		<div class="wrap dms-wrap">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'Assignments', 'dms' ); ?></h1>
+			<div class="dms-page-head">
+				<div>
+					<p class="dms-eyebrow"><?php esc_html_e( 'Operations', 'dms' ); ?></p>
+					<h1><?php esc_html_e( 'Assignments', 'dms' ); ?></h1>
+					<p><?php esc_html_e( 'Registrations waiting for an officer, and each officer\'s current workload.', 'dms' ); ?></p>
+				</div>
+				<div class="dms-page-head__actions">
 			<?php if ( current_user_can( 'assignment.assign' ) ) : ?>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="dms-inline-form">
 					<?php echo AdminActions::fields( 'assign_pending' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 					<button type="submit" class="page-title-action"><?php esc_html_e( 'Try automatic assignment now', 'dms' ); ?></button>
 				</form>
 			<?php endif; ?>
+				</div>
+			</div>
 			<hr class="wp-header-end">
 
 			<h2><?php esc_html_e( 'Waiting for an officer', 'dms' ); ?></h2>

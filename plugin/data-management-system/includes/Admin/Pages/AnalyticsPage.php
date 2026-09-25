@@ -41,7 +41,13 @@ class AnalyticsPage {
 		$f = $o['filters'];
 		?>
 		<div class="wrap dms-wrap dms-analytics">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'Analytics', 'dms' ); ?></h1>
+			<div class="dms-page-head">
+				<div>
+					<p class="dms-eyebrow"><?php esc_html_e( 'Insights', 'dms' ); ?></p>
+					<h1><?php esc_html_e( 'Analytics', 'dms' ); ?></h1>
+					<p><?php esc_html_e( 'Approved registrations and decisions over time.', 'dms' ); ?></p>
+				</div>
+				<div class="dms-page-head__actions">
 			<?php if ( current_user_can( 'analytics.export' ) ) : ?>
 				<?php
 				self::export_forms(
@@ -58,6 +64,8 @@ class AnalyticsPage {
 				);
 				?>
 			<?php endif; ?>
+				</div>
+			</div>
 			<hr class="wp-header-end">
 			<?php self::filter_form( self::SLUG, $f, $this->plugin ); ?>
 

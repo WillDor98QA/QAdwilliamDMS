@@ -47,10 +47,18 @@ class UsersPage {
 		$ids = $this->managed_user_ids();
 		?>
 		<div class="wrap dms-wrap">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'Users', 'dms' ); ?></h1>
+			<div class="dms-page-head">
+				<div>
+					<p class="dms-eyebrow"><?php esc_html_e( 'Access control', 'dms' ); ?></p>
+					<h1><?php esc_html_e( 'Users', 'dms' ); ?></h1>
+					<p><?php esc_html_e( 'WordPress users with Data Management roles, their regions and open work.', 'dms' ); ?></p>
+				</div>
+				<div class="dms-page-head__actions">
 			<?php if ( current_user_can( 'users.create' ) ) : ?>
 				<a class="page-title-action" href="<?php echo esc_url( admin_url( 'admin.php?page=dms-users&new=1' ) ); ?>"><?php esc_html_e( 'Add User', 'dms' ); ?></a>
 			<?php endif; ?>
+				</div>
+			</div>
 			<hr class="wp-header-end">
 			<table class="widefat striped">
 				<thead><tr><th scope="col"><?php esc_html_e( 'Name', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Email', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Roles', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Regions', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Status', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Open work', 'dms' ); ?></th></tr></thead>
@@ -75,7 +83,7 @@ class UsersPage {
 						esc_html( $user->user_email ),
 						esc_html( '' !== $roles ? $roles : '—' ),
 						esc_html( '' !== $regions ? $regions : '—' ),
-						$active ? esc_html__( 'Active', 'dms' ) : '<span class="dms-status dms-status--disapproved">' . esc_html__( 'Disabled', 'dms' ) . '</span>',
+						$active ? '<span class="dms-pill dms-pill--green">' . esc_html__( 'Active', 'dms' ) . '</span>' : '<span class="dms-status dms-status--disapproved">' . esc_html__( 'Disabled', 'dms' ) . '</span>',
 						(int) $this->plugin->officer_regions()->outstanding_count( $id )
 					);
 				}

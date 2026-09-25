@@ -42,7 +42,14 @@ class NotificationsPage {
 		}
 		?>
 		<div class="wrap dms-wrap">
-			<h1><?php esc_html_e( 'Notifications', 'dms' ); ?></h1>
+			<div class="dms-page-head">
+				<div>
+					<p class="dms-eyebrow"><?php esc_html_e( 'System', 'dms' ); ?></p>
+					<h1><?php esc_html_e( 'Notifications', 'dms' ); ?></h1>
+					<p><?php esc_html_e( 'Email delivery log, retries and email templates.', 'dms' ); ?></p>
+				</div>
+			</div>
+			<hr class="wp-header-end">
 			<nav class="nav-tab-wrapper">
 				<?php if ( current_user_can( 'notifications.view' ) ) : ?>
 					<a class="nav-tab<?php echo 'log' === $tab ? ' nav-tab-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::SLUG . '&tab=log' ) ); ?>"><?php esc_html_e( 'Delivery log', 'dms' ); ?></a>
@@ -126,7 +133,7 @@ class NotificationsPage {
 			<?php endif; ?>
 			<?php foreach ( $result['items'] as $n ) : ?>
 				<tr>
-					<td><?php echo esc_html( get_date_from_gmt( $n->created_at, get_option( 'date_format' ) . ' H:i' ) ); ?></td>
+					<td><?php echo esc_html( \DMS\Admin\View::short_date( $n->created_at ) ); ?></td>
 					<td><?php echo esc_html( EmailTemplates::defaults()[ $n->event ]['label'] ?? $n->event ); ?></td>
 					<td>
 						<?php if ( $n->registration_number ) : ?>
@@ -134,7 +141,17 @@ class NotificationsPage {
 						<?php endif; ?>
 					</td>
 					<td><?php echo null === $n->recipient_email ? '<em>' . esc_html__( 'removed', 'dms' ) . '</em>' : esc_html( $n->recipient_email ); ?></td>
-					<td><?php echo esc_html( $labels[ $n->status ] ?? $n->status ); ?></td>
+					<td><span class="dms-pill dms-pill--
+					<?php
+					echo esc_attr(
+						array(
+							'SENT'   => 'green',
+							'FAILED' => 'red',
+							'QUEUED' => 'amber',
+						)[ $n->status ] ?? 'gray'
+					);
+					?>
+														"><?php echo esc_html( $labels[ $n->status ] ?? $n->status ); ?></span></td>
 					<td><?php echo esc_html( $n->attempts . ' / ' . $n->max_attempts ); ?></td>
 					<td>
 						<?php

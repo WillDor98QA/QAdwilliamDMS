@@ -11,6 +11,7 @@
 namespace DMS\Admin\Pages;
 
 use DMS\Admin\AdminActions;
+use DMS\Admin\View;
 use DMS\Electoral\ElectoralLevel;
 use DMS\Errors\DmsException;
 use DMS\Imports\ImportStatus;
@@ -50,82 +51,103 @@ class ElectoralDataPage {
 	}
 
 	private function render_overview(): void {
-		$counts = $this->plugin->electoral()->counts();
+		$counts  = $this->plugin->electoral()->counts();
+		$actions = '';
+		if ( current_user_can( 'imports.view' ) ) {
+			ob_start();
+			$this->download_button( false, __( 'Download Template', 'dms' ) );
+			$this->download_button( true, __( 'Download Current Data', 'dms' ) );
+			$actions = (string) ob_get_clean();
+		}
+		View::page_head( __( 'Reference data', 'dms' ), __( 'Electoral Data', 'dms' ), __( 'The Region → Constituency → Polling Station hierarchy used by the registration form.', 'dms' ), $actions );
 		?>
-		<h1><?php esc_html_e( 'Electoral Data', 'dms' ); ?></h1>
 		<?php if ( current_user_can( 'imports.view' ) ) : ?>
-			<div class="dms-tiles">
+			<div class="dms-kpis dms-kpis--3">
 				<?php
+				$icons = array(
+					'REGION'          => 'location-alt',
+					'CONSTITUENCY'    => 'location',
+					'POLLING_STATION' => 'building',
+				);
 				foreach ( ElectoralLevel::cases() as $level ) {
-					printf(
-						'<a class="dms-tile" href="%1$s"><span class="dms-tile__label">%2$s</span><span class="dms-tile__value">%3$s</span></a>',
-						esc_url(
-							self::url(
-								array(
-									'view'  => 'data',
-									'level' => $level->value,
-								)
+					View::kpi(
+						$this->plural( $level ),
+						(int) $counts[ $level->value ],
+						$icons[ $level->value ] ?? 'location',
+						__( 'View records', 'dms' ),
+						self::url(
+							array(
+								'view'  => 'data',
+								'level' => $level->value,
 							)
-						),
-						esc_html( $this->plural( $level ) ),
-						esc_html( number_format_i18n( $counts[ $level->value ] ) )
+						)
 					);
 				}
 				?>
 			</div>
-			<p>
-				<?php $this->download_button( false, __( 'Download Template', 'dms' ) ); ?>
-				<?php $this->download_button( true, __( 'Download Current Data', 'dms' ) ); ?>
-				<a class="button" href="<?php echo esc_url( self::url( array( 'view' => 'data' ) ) ); ?>"><?php esc_html_e( 'View Current Data', 'dms' ); ?></a>
-			</p>
 		<?php endif; ?>
 
 		<?php if ( current_user_can( 'imports.upload' ) && current_user_can( 'imports.validate' ) ) : ?>
-			<div class="dms-card">
-				<h2><?php esc_html_e( 'Import Electoral Data', 'dms' ); ?></h2>
+			<section class="dms-card" aria-labelledby="dms-import-title">
+				<div class="dms-card__head">
+					<h2 id="dms-import-title"><?php esc_html_e( 'Import Electoral Data', 'dms' ); ?></h2>
+					<span class="dms-pill dms-pill--blue"><?php esc_html_e( 'Validate → preview → confirm', 'dms' ); ?></span>
+				</div>
 				<ol class="dms-steps">
 					<li><?php esc_html_e( 'Download the official template (or the current data to edit it).', 'dms' ); ?></li>
 					<li><?php esc_html_e( 'Fill in the Regions, Constituencies and Polling Stations sheets.', 'dms' ); ?></li>
 					<li><?php esc_html_e( 'Upload the workbook. It is checked and you see a preview. Nothing is saved until you confirm.', 'dms' ); ?></li>
 				</ol>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data">
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data" class="dms-import-box">
 					<?php echo AdminActions::fields( 'import_upload' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-					<label for="dms-import-file"><?php esc_html_e( 'Completed workbook (.xlsx)', 'dms' ); ?></label>
-					<input type="file" id="dms-import-file" name="workbook" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
-					<p class="description">
-					<?php
-					/* translators: %s: maximum file size */
-					echo esc_html( sprintf( __( 'Maximum size: %s.', 'dms' ), size_format( $this->plugin->settings()->int( 'import_max_file_bytes' ) ) ) );
-					?>
-					</p>
+					<div class="dms-import-box__field">
+						<span class="dms-import-box__icon dashicons dashicons-upload" aria-hidden="true"></span>
+						<div>
+							<label for="dms-import-file"><?php esc_html_e( 'Completed workbook (.xlsx)', 'dms' ); ?></label>
+							<input type="file" id="dms-import-file" name="workbook" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
+							<p class="description">
+							<?php
+							/* translators: %s: maximum file size */
+							echo esc_html( sprintf( __( 'Maximum size: %s.', 'dms' ), size_format( $this->plugin->settings()->int( 'import_max_file_bytes' ) ) ) );
+							?>
+							</p>
+						</div>
+					</div>
 					<?php submit_button( __( 'Upload and check', 'dms' ), 'primary', 'submit', false ); ?>
 				</form>
-			</div>
+			</section>
 		<?php endif; ?>
 
 		<?php if ( current_user_can( 'imports.view_history' ) ) : ?>
-			<h2><?php esc_html_e( 'Import History', 'dms' ); ?></h2>
 			<?php $history = $this->plugin->import_batches()->history( 1, 50 ); ?>
-			<table class="widefat striped">
-				<thead><tr><th scope="col"><?php esc_html_e( 'Import', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Date', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'File', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Rows', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'New / Updated / Unchanged / Errors', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Status', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'By', 'dms' ); ?></th></tr></thead>
-				<tbody>
-				<?php if ( array() === $history['items'] ) : ?>
-					<tr><td colspan="7"><?php esc_html_e( 'No imports yet.', 'dms' ); ?></td></tr>
-				<?php endif; ?>
-				<?php foreach ( $history['items'] as $b ) : ?>
-					<?php $user = get_user_by( 'id', (int) $b->uploaded_by ); ?>
-					<tr>
-						<td><a href="<?php echo esc_url( self::url( array( 'batch' => $b->id ) ) ); ?>"><strong><?php echo esc_html( $b->import_reference ); ?></strong></a></td>
-						<td><?php echo esc_html( get_date_from_gmt( $b->created_at, get_option( 'date_format' ) . ' H:i' ) ); ?></td>
-						<td><?php echo esc_html( $b->filename ); ?></td>
-						<td><?php echo esc_html( number_format_i18n( (int) $b->total_rows ) ); ?></td>
-						<td><?php echo esc_html( sprintf( '%s / %s / %s / %s', number_format_i18n( (int) $b->created_count ), number_format_i18n( (int) $b->updated_count ), number_format_i18n( (int) $b->unchanged_count ), number_format_i18n( (int) $b->error_count ) ) ); ?></td>
-						<td><span class="dms-import-status dms-import-status--<?php echo esc_attr( strtolower( $b->status ) ); ?>"><?php echo esc_html( ImportStatus::label( $b->status ) ); ?></span></td>
-						<td><?php echo esc_html( $user ? $user->display_name : '—' ); ?></td>
-					</tr>
-				<?php endforeach; ?>
-				</tbody>
-			</table>
+			<section class="dms-card dms-card--flush" id="import-history" aria-labelledby="dms-history-title">
+				<div class="dms-card__head dms-card__head--padded">
+					<h2 id="dms-history-title"><?php esc_html_e( 'Import History', 'dms' ); ?></h2>
+					<?php if ( current_user_can( 'imports.view' ) ) : ?>
+						<a href="<?php echo esc_url( self::url( array( 'view' => 'data' ) ) ); ?>"><?php esc_html_e( 'View Current Data', 'dms' ); ?> <span aria-hidden="true">&rarr;</span></a>
+					<?php endif; ?>
+				</div>
+				<table class="widefat">
+					<thead><tr><th scope="col"><?php esc_html_e( 'Import', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Date', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'File', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Rows', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'New / Updated / Unchanged / Errors', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Status', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'By', 'dms' ); ?></th></tr></thead>
+					<tbody>
+					<?php if ( array() === $history['items'] ) : ?>
+						<tr><td colspan="7" class="dms-empty"><?php esc_html_e( 'No imports yet.', 'dms' ); ?></td></tr>
+					<?php endif; ?>
+					<?php foreach ( $history['items'] as $b ) : ?>
+						<?php $user = get_user_by( 'id', (int) $b->uploaded_by ); ?>
+						<tr>
+							<td><a href="<?php echo esc_url( self::url( array( 'batch' => $b->id ) ) ); ?>"><strong><?php echo esc_html( $b->import_reference ); ?></strong></a></td>
+							<td><?php echo esc_html( View::short_date( $b->created_at ) ); ?></td>
+							<td><?php echo esc_html( $b->filename ); ?></td>
+							<td><?php echo esc_html( number_format_i18n( (int) $b->total_rows ) ); ?></td>
+							<td><?php echo esc_html( sprintf( '%s / %s / %s / %s', number_format_i18n( (int) $b->created_count ), number_format_i18n( (int) $b->updated_count ), number_format_i18n( (int) $b->unchanged_count ), number_format_i18n( (int) $b->error_count ) ) ); ?></td>
+							<td><span class="dms-import-status dms-import-status--<?php echo esc_attr( strtolower( $b->status ) ); ?>"><?php echo esc_html( ImportStatus::label( $b->status ) ); ?></span></td>
+							<td><?php echo esc_html( $user ? $user->display_name : '—' ); ?></td>
+						</tr>
+					<?php endforeach; ?>
+					</tbody>
+				</table>
+			</section>
 		<?php endif; ?>
 		<?php
 	}
@@ -139,11 +161,17 @@ class ElectoralDataPage {
 		$summary = is_array( $summary ) ? $summary : array();
 		$user    = get_user_by( 'id', (int) $batch->uploaded_by );
 		?>
-		<p><a href="<?php echo esc_url( self::url() ); ?>">&larr; <?php esc_html_e( 'Electoral Data', 'dms' ); ?></a></p>
-		<h1>
-			<?php echo esc_html( $batch->import_reference ); ?>
-			<span class="dms-import-status dms-import-status--<?php echo esc_attr( strtolower( $batch->status ) ); ?>"><?php echo esc_html( ImportStatus::label( $batch->status ) ); ?></span>
-		</h1>
+		<p class="dms-back"><a href="<?php echo esc_url( self::url() ); ?>">&larr; <?php esc_html_e( 'Electoral Data', 'dms' ); ?></a></p>
+		<div class="dms-page-head">
+			<div>
+				<p class="dms-eyebrow"><?php esc_html_e( 'Import', 'dms' ); ?></p>
+				<h1 class="dms-title-with-badge">
+					<?php echo esc_html( $batch->import_reference ); ?>
+					<span class="dms-import-status dms-import-status--<?php echo esc_attr( strtolower( $batch->status ) ); ?>"><?php echo esc_html( ImportStatus::label( $batch->status ) ); ?></span>
+				</h1>
+			</div>
+		</div>
+		<hr class="wp-header-end">
 		<div class="dms-card">
 			<dl class="dms-dl">
 				<dt><?php esc_html_e( 'File', 'dms' ); ?></dt><dd><?php echo esc_html( $batch->filename ); ?></dd>
@@ -171,8 +199,9 @@ class ElectoralDataPage {
 		<?php endif; ?>
 
 		<?php if ( isset( $summary['counts'] ) ) : ?>
+			<section class="dms-card">
 			<h2><?php echo ImportStatus::COMPLETED === $batch->status || ImportStatus::ROLLED_BACK === $batch->status ? esc_html__( 'Import Summary', 'dms' ) : esc_html__( 'Import Preview', 'dms' ); ?></h2>
-			<table class="widefat striped dms-preview">
+			<table class="widefat dms-preview">
 				<thead><tr><th scope="col"></th><th scope="col"><?php esc_html_e( 'New', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Updated', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Unchanged', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Errors', 'dms' ); ?></th></tr></thead>
 				<tbody>
 				<?php foreach ( ElectoralLevel::cases() as $level ) : ?>
@@ -187,9 +216,11 @@ class ElectoralDataPage {
 				<?php endforeach; ?>
 				</tbody>
 			</table>
+			</section>
 		<?php endif; ?>
 
 		<?php if ( ! empty( $summary['errors'] ) ) : ?>
+			<section class="dms-card dms-card--danger">
 			<h2><?php esc_html_e( 'Errors to fix', 'dms' ); ?></h2>
 			<p><?php esc_html_e( 'Nothing was imported. Correct these rows in your workbook and upload it again.', 'dms' ); ?></p>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="dms-inline-form">
@@ -211,12 +242,13 @@ class ElectoralDataPage {
 			<?php if ( count( $summary['errors'] ) > 200 || ! empty( $summary['errors_truncated'] ) ) : ?>
 				<p class="description"><?php esc_html_e( 'More errors are listed in the error report.', 'dms' ); ?></p>
 			<?php endif; ?>
+			</section>
 		<?php endif; ?>
 
 		<?php if ( ImportStatus::VALIDATED === $batch->status && current_user_can( 'imports.confirm' ) ) : ?>
-			<div class="dms-card">
+			<div class="dms-card dms-card--ready">
 				<p><strong><?php esc_html_e( 'The import is ready to proceed.', 'dms' ); ?></strong></p>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" data-dms-confirm="<?php esc_attr_e( 'Apply these changes to the electoral data now?', 'dms' ); ?>">
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" data-dms-confirm="<?php esc_attr_e( 'Apply these changes to the electoral data now?', 'dms' ); ?>" data-dms-confirm-tone="primary" data-dms-confirm-label="<?php esc_attr_e( 'Confirm Import', 'dms' ); ?>">
 					<?php echo AdminActions::fields( 'import_confirm' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 					<input type="hidden" name="batch_id" value="<?php echo esc_attr( (string) $batch_id ); ?>">
 					<a class="button" href="<?php echo esc_url( self::url() ); ?>"><?php esc_html_e( 'Cancel', 'dms' ); ?></a>
@@ -237,14 +269,16 @@ class ElectoralDataPage {
 	private function render_changes( int $batch_id ): void {
 		$items = $this->plugin->import_batches()->items( $batch_id, array( ImportStatus::ACTION_CREATE, ImportStatus::ACTION_UPDATE ) );
 		?>
+		<section class="dms-card dms-card--scroll">
 		<h2><?php esc_html_e( 'Changes made by this import', 'dms' ); ?></h2>
 		<?php if ( array() === $items ) : ?>
-			<p><?php esc_html_e( 'This import did not add or change any records.', 'dms' ); ?></p>
+			<p class="dms-empty-inline"><?php esc_html_e( 'This import did not add or change any records.', 'dms' ); ?></p>
+			</section>
 			<?php
 			return;
 		endif;
 		?>
-		<table class="widefat striped">
+		<table class="widefat">
 			<thead><tr><th scope="col"><?php esc_html_e( 'Type', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Code', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Change', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Before', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'After', 'dms' ); ?></th></tr></thead>
 			<tbody>
 			<?php foreach ( array_slice( $items, 0, 500 ) as $item ) : ?>
@@ -266,6 +300,7 @@ class ElectoralDataPage {
 			?>
 			</p>
 		<?php endif; ?>
+		</section>
 		<?php
 	}
 
@@ -356,8 +391,11 @@ class ElectoralDataPage {
 		$total = (int) ( array() === $params ? $wpdb->get_var( $count ) : $wpdb->get_var( $wpdb->prepare( $count, ...$params ) ) );
 		// phpcs:enable
 		?>
-		<p><a href="<?php echo esc_url( self::url() ); ?>">&larr; <?php esc_html_e( 'Electoral Data', 'dms' ); ?></a></p>
-		<h1><?php esc_html_e( 'Current Electoral Data', 'dms' ); ?></h1>
+		<p class="dms-back"><a href="<?php echo esc_url( self::url() ); ?>">&larr; <?php esc_html_e( 'Electoral Data', 'dms' ); ?></a></p>
+		<?php
+		/* translators: %s: number of records */
+		View::page_head( __( 'Reference data', 'dms' ), __( 'Current Electoral Data', 'dms' ), sprintf( _n( '%s record at this level.', '%s records at this level.', $total, 'dms' ), number_format_i18n( $total ) ) );
+		?>
 		<nav class="nav-tab-wrapper">
 			<?php foreach ( ElectoralLevel::cases() as $l ) : ?>
 				<a class="nav-tab<?php echo $l === $level ? ' nav-tab-active' : ''; ?>" href="
@@ -374,13 +412,14 @@ class ElectoralDataPage {
 									"<?php echo $l === $level ? ' aria-current="page"' : ''; ?>><?php echo esc_html( $this->plural( $l ) ); ?></a>
 			<?php endforeach; ?>
 		</nav>
-		<form method="get" class="dms-filters">
+		<div class="dms-card dms-card--flush dms-list-card">
+		<form method="get" class="dms-filters dms-toolbar">
 			<input type="hidden" name="page" value="<?php echo esc_attr( self::SLUG ); ?>"><input type="hidden" name="view" value="data"><input type="hidden" name="level" value="<?php echo esc_attr( $level->value ); ?>">
 			<label for="dms-data-search"><?php esc_html_e( 'Search code or name', 'dms' ); ?></label>
 			<input type="search" id="dms-data-search" name="s" value="<?php echo esc_attr( $search ); ?>">
 			<?php submit_button( __( 'Search', 'dms' ), '', '', false ); ?>
 		</form>
-		<table class="widefat striped">
+		<table class="widefat">
 			<thead><tr><th scope="col"><?php esc_html_e( 'Code', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Name', 'dms' ); ?></th>
 			<?php
 			if ( null !== $parent ) :
@@ -388,17 +427,18 @@ class ElectoralDataPage {
 				<th scope="col"><?php echo esc_html( $parent->label() ); ?></th><?php endif; ?><th scope="col"><?php esc_html_e( 'Status', 'dms' ); ?></th></tr></thead>
 			<tbody>
 			<?php if ( array() === $rows ) : ?>
-				<tr><td colspan="4"><?php esc_html_e( 'No records. Import the official workbook to add electoral data.', 'dms' ); ?></td></tr>
+				<tr><td colspan="4" class="dms-empty"><?php esc_html_e( 'No records. Import the official workbook to add electoral data.', 'dms' ); ?></td></tr>
 			<?php endif; ?>
 			<?php foreach ( $rows as $r ) : ?>
 				<tr><td><code><?php echo esc_html( $r->code ); ?></code></td><td><?php echo esc_html( $r->name ); ?></td>
 				<?php
 				if ( null !== $parent ) :
 					?>
-					<td><?php echo esc_html( $r->parent_name . ' (' . $r->parent_code . ')' ); ?></td><?php endif; ?><td><?php echo esc_html( 'ACTIVE' === $r->status ? __( 'Active', 'dms' ) : __( 'Inactive', 'dms' ) ); ?></td></tr>
+					<td><?php echo esc_html( $r->parent_name . ' (' . $r->parent_code . ')' ); ?></td><?php endif; ?><td><span class="dms-pill dms-pill--<?php echo 'ACTIVE' === $r->status ? 'green' : 'gray'; ?>"><?php echo esc_html( 'ACTIVE' === $r->status ? __( 'Active', 'dms' ) : __( 'Inactive', 'dms' ) ); ?></span></td></tr>
 			<?php endforeach; ?>
 			</tbody>
 		</table>
+		</div>
 		<?php
 		$pages = (int) ceil( $total / $per );
 		if ( $pages > 1 ) {

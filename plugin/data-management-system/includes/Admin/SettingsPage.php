@@ -121,7 +121,14 @@ class SettingsPage {
 		$this->draft = is_array( $notice ) && is_array( $notice['draft'] ?? null ) ? $notice['draft'] : array();
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Data Management Settings', 'dms' ); ?></h1>
+			<div class="dms-page-head">
+				<div>
+					<p class="dms-eyebrow"><?php esc_html_e( 'System', 'dms' ); ?></p>
+					<h1><?php esc_html_e( 'Data Management Settings', 'dms' ); ?></h1>
+					<p><?php esc_html_e( 'Verification, SMS provider, limits, anti-bot protection and retention.', 'dms' ); ?></p>
+				</div>
+			</div>
+			<hr class="wp-header-end">
 
 			<?php if ( is_array( $notice ) && ! empty( $notice['ok'] ) ) : ?>
 				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'dms' ); ?></p></div>
@@ -137,7 +144,8 @@ class SettingsPage {
 				<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION ); ?>">
 				<?php wp_nonce_field( self::ACTION ); ?>
 
-				<h2><?php esc_html_e( 'Registration Verification', 'dms' ); ?></h2>
+				<section class="dms-card dms-settings-section" id="dms-settings-verification" aria-labelledby="dms-settings-verification-title">
+				<h2 id="dms-settings-verification-title"><span class="dashicons dashicons-shield" aria-hidden="true"></span> <?php esc_html_e( 'Registration Verification', 'dms' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Allow OTP Verification', 'dms' ); ?></th>
@@ -150,7 +158,10 @@ class SettingsPage {
 					</tr>
 				</table>
 
-				<h2><?php esc_html_e( 'SMS Provider', 'dms' ); ?></h2>
+				</section>
+
+				<section class="dms-card dms-settings-section" id="dms-settings-sms" aria-labelledby="dms-settings-sms-title">
+				<h2 id="dms-settings-sms-title"><span class="dashicons dashicons-smartphone" aria-hidden="true"></span> <?php esc_html_e( 'SMS Provider', 'dms' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<tr>
 						<th scope="row"><label for="dms-sms-gateway"><?php esc_html_e( 'Provider', 'dms' ); ?></label></th>
@@ -174,7 +185,10 @@ class SettingsPage {
 					?>
 				</table>
 
-				<h2><?php esc_html_e( 'OTP Limits', 'dms' ); ?></h2>
+				</section>
+
+				<section class="dms-card dms-settings-section" id="dms-settings-otp" aria-labelledby="dms-settings-otp-title">
+				<h2 id="dms-settings-otp-title"><span class="dashicons dashicons-clock" aria-hidden="true"></span> <?php esc_html_e( 'OTP Limits', 'dms' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<?php
 					$this->number_row( 'otp_expiry_seconds', __( 'Code expiry (seconds)', 'dms' ), $disabled );
@@ -186,7 +200,10 @@ class SettingsPage {
 					?>
 				</table>
 
-				<h2><?php esc_html_e( 'Anti-bot Protection', 'dms' ); ?></h2>
+				</section>
+
+				<section class="dms-card dms-settings-section" id="dms-settings-antibot" aria-labelledby="dms-settings-antibot-title">
+				<h2 id="dms-settings-antibot-title"><span class="dashicons dashicons-privacy" aria-hidden="true"></span> <?php esc_html_e( 'Anti-bot Protection', 'dms' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Cloudflare Turnstile', 'dms' ); ?></th>
@@ -201,7 +218,10 @@ class SettingsPage {
 					?>
 				</table>
 
-				<h2><?php esc_html_e( 'Public Limits & Notifications', 'dms' ); ?></h2>
+				</section>
+
+				<section class="dms-card dms-settings-section" id="dms-settings-limits" aria-labelledby="dms-settings-limits-title">
+				<h2 id="dms-settings-limits-title"><span class="dashicons dashicons-email-alt" aria-hidden="true"></span> <?php esc_html_e( 'Public Limits & Notifications', 'dms' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<?php
 					$this->number_row( 'submission_max_per_ip_hour', __( 'Submissions per IP address per hour', 'dms' ), $disabled );
@@ -214,14 +234,19 @@ class SettingsPage {
 					</tr>
 				</table>
 
-				<h2><?php esc_html_e( 'Data Retention', 'dms' ); ?></h2>
+				</section>
+
+				<section class="dms-card dms-settings-section" id="dms-settings-retention" aria-labelledby="dms-settings-retention-title">
+				<h2 id="dms-settings-retention-title"><span class="dashicons dashicons-backup" aria-hidden="true"></span> <?php esc_html_e( 'Data Retention', 'dms' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<?php $this->number_row( 'import_file_retention_days', __( 'Keep uploaded electoral workbooks for (days)', 'dms' ), $disabled ); ?>
-					<tr><td colspan="2" class="description" style="padding-left:0"><?php esc_html_e( 'After an import has finished, its uploaded file is deleted after this many days. The import history, its changes and rollback stay available. 0 keeps files forever.', 'dms' ); ?></td></tr>
+					<tr><td colspan="2" class="description dms-row-note"><?php esc_html_e( 'After an import has finished, its uploaded file is deleted after this many days. The import history, its changes and rollback stay available. 0 keeps files forever.', 'dms' ); ?></td></tr>
 				</table>
 
+				</section>
+
 				<?php if ( $can_edit ) : ?>
-					<?php submit_button( __( 'Save settings', 'dms' ) ); ?>
+					<div class="dms-savebar"><?php submit_button( __( 'Save settings', 'dms' ), 'primary', 'submit', false ); ?></div>
 				<?php endif; ?>
 			</form>
 		</div>

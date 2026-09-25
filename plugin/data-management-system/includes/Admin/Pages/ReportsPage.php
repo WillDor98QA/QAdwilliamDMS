@@ -35,7 +35,13 @@ class ReportsPage {
 		$report = $this->plugin->reports()->build( $current, $raw );
 		?>
 		<div class="wrap dms-wrap">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'Reports', 'dms' ); ?></h1>
+			<div class="dms-page-head">
+				<div>
+					<p class="dms-eyebrow"><?php esc_html_e( 'Insights', 'dms' ); ?></p>
+					<h1><?php esc_html_e( 'Reports', 'dms' ); ?></h1>
+					<p><?php esc_html_e( 'Summary tables of approved registrations.', 'dms' ); ?></p>
+				</div>
+				<div class="dms-page-head__actions">
 			<?php if ( current_user_can( 'reports.export' ) ) : ?>
 				<?php
 				AnalyticsPage::export_forms(
@@ -53,6 +59,8 @@ class ReportsPage {
 				);
 				?>
 			<?php endif; ?>
+				</div>
+			</div>
 			<hr class="wp-header-end">
 			<nav class="nav-tab-wrapper">
 				<?php foreach ( $catalog as $key => $info ) : ?>

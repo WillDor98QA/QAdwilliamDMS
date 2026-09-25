@@ -30,7 +30,13 @@ class AuditPage {
 		$pages           = (int) ceil( $result['total'] / $result['per_page'] );
 		?>
 		<div class="wrap dms-wrap">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'Audit Logs', 'dms' ); ?></h1>
+			<div class="dms-page-head">
+				<div>
+					<p class="dms-eyebrow"><?php esc_html_e( 'Traceability', 'dms' ); ?></p>
+					<h1><?php esc_html_e( 'Audit Logs', 'dms' ); ?></h1>
+					<p><?php esc_html_e( 'The permanent record of actions on registrations, users, imports and settings.', 'dms' ); ?></p>
+				</div>
+				<div class="dms-page-head__actions">
 			<?php if ( current_user_can( 'audit.export' ) ) : ?>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="dms-inline-form">
 					<?php echo AdminActions::fields( 'audit_export' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
@@ -38,6 +44,8 @@ class AuditPage {
 					<button type="submit" class="page-title-action"><?php esc_html_e( 'Export CSV', 'dms' ); ?></button>
 				</form>
 			<?php endif; ?>
+				</div>
+			</div>
 			<hr class="wp-header-end">
 			<form method="get" class="dms-filters">
 				<input type="hidden" name="page" value="dms-audit">

@@ -33,7 +33,13 @@ class FormBuilderPage {
 		);
 		?>
 		<div class="wrap dms-wrap">
-			<h1><?php esc_html_e( 'Form Builder', 'dms' ); ?></h1>
+			<div class="dms-page-head">
+				<div>
+					<p class="dms-eyebrow"><?php esc_html_e( 'Configuration', 'dms' ); ?></p>
+					<h1><?php esc_html_e( 'Form Builder', 'dms' ); ?></h1>
+				</div>
+			</div>
+			<hr class="wp-header-end">
 			<p class="description"><?php esc_html_e( 'Sections always appear in this order, followed by Consent. Phone, Region, Constituency and Polling Station are always required. Use [dms_registration_form] on any page to show the form.', 'dms' ); ?></p>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<?php echo AdminActions::fields( 'form_save' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>

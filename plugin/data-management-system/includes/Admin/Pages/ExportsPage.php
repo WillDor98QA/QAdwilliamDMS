@@ -25,7 +25,13 @@ class ExportsPage {
 		$jobs = $this->plugin->exports()->jobs_for( get_current_user_id() );
 		?>
 		<div class="wrap dms-wrap">
-			<h1><?php esc_html_e( 'My Exports', 'dms' ); ?></h1>
+			<div class="dms-page-head">
+				<div>
+					<p class="dms-eyebrow"><?php esc_html_e( 'Data delivery', 'dms' ); ?></p>
+					<h1><?php esc_html_e( 'My Exports', 'dms' ); ?></h1>
+				</div>
+			</div>
+			<hr class="wp-header-end">
 			<p class="description"><?php esc_html_e( 'Large exports are prepared in the background. Files can be downloaded for 24 hours, and only by you.', 'dms' ); ?></p>
 			<table class="widefat striped">
 				<thead><tr><th scope="col"><?php esc_html_e( 'Requested', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'List', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Format', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Rows', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Status', 'dms' ); ?></th><th scope="col"><span class="screen-reader-text"><?php esc_html_e( 'Download', 'dms' ); ?></span></th></tr></thead>
@@ -35,7 +41,7 @@ class ExportsPage {
 				<?php endif; ?>
 				<?php foreach ( $jobs as $job ) : ?>
 					<tr>
-						<td><?php echo esc_html( get_date_from_gmt( $job->created_at, get_option( 'date_format' ) . ' H:i' ) ); ?></td>
+						<td><?php echo esc_html( \DMS\Admin\View::short_date( $job->created_at ) ); ?></td>
 						<td><?php echo esc_html( ucwords( str_replace( '_', ' ', $job->area ) ) ); ?></td>
 						<td><?php echo esc_html( strtoupper( $job->format ) ); ?></td>
 						<td><?php echo esc_html( number_format_i18n( (int) $job->total_rows ) ); ?></td>

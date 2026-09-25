@@ -33,10 +33,18 @@ class RolesPage {
 		}
 		?>
 		<div class="wrap dms-wrap">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'Roles & Permissions', 'dms' ); ?></h1>
+			<div class="dms-page-head">
+				<div>
+					<p class="dms-eyebrow"><?php esc_html_e( 'Access control', 'dms' ); ?></p>
+					<h1><?php esc_html_e( 'Roles & Permissions', 'dms' ); ?></h1>
+					<p><?php esc_html_e( 'What each role may see and do.', 'dms' ); ?></p>
+				</div>
+				<div class="dms-page-head__actions">
 			<?php if ( current_user_can( 'roles.create' ) ) : ?>
 				<a class="page-title-action" href="<?php echo esc_url( admin_url( 'admin.php?page=dms-roles&new=1' ) ); ?>"><?php esc_html_e( 'Create Role', 'dms' ); ?></a>
 			<?php endif; ?>
+				</div>
+			</div>
 			<hr class="wp-header-end">
 			<table class="widefat striped">
 				<thead><tr><th scope="col"><?php esc_html_e( 'Role', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Description', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Permissions', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Users', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Status', 'dms' ); ?></th></tr></thead>
@@ -47,7 +55,7 @@ class RolesPage {
 						<td><?php echo esc_html( (string) $role->description ); ?></td>
 						<td><?php echo (int) $role->is_system ? esc_html__( 'All', 'dms' ) : esc_html( (string) count( $this->plugin->roles()->permissions( (int) $role->id ) ) ); ?></td>
 						<td><?php echo esc_html( (string) $this->plugin->roles()->user_count( (int) $role->id ) ); ?></td>
-						<td><?php echo esc_html( 'ACTIVE' === $role->status ? __( 'Active', 'dms' ) : __( 'Inactive', 'dms' ) ); ?></td>
+						<td><span class="dms-pill dms-pill--<?php echo 'ACTIVE' === $role->status ? 'green' : 'gray'; ?>"><?php echo esc_html( 'ACTIVE' === $role->status ? __( 'Active', 'dms' ) : __( 'Inactive', 'dms' ) ); ?></span></td>
 					</tr>
 				<?php endforeach; ?>
 				</tbody>
