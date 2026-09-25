@@ -109,6 +109,43 @@ class View {
 		echo '</ul>';
 	}
 
+	/** Requested page number for a pagination parameter (1 when absent or invalid). */
+	public static function page_param( string $param = 'paged' ): int {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only paging.
+		return max( 1, absint( wp_unslash( $_GET[ $param ] ?? 1 ) ) );
+	}
+
+	/**
+	 * Page links in the same style as the registration lists: "N items",
+	 * first / previous / "X of Y" / next / last. Links keep every other query
+	 * argument (filters, tabs), so changing page never drops a filter.
+	 */
+	public static function pagination( int $total, int $per_page, int $current, string $param = 'paged' ): void {
+		$pages   = max( 1, (int) ceil( $total / max( 1, $per_page ) ) );
+		$current = min( max( 1, $current ), $pages );
+		/* translators: %s: number of items */
+		$count = sprintf( _n( '%s item', '%s items', $total, 'dms' ), number_format_i18n( $total ) );
+		echo '<div class="tablenav dms-pager"><div class="tablenav-pages' . ( $pages > 1 ? '' : ' one-page' ) . '">';
+		printf( '<span class="displaying-num">%s</span>', esc_html( $count ) );
+		if ( $pages > 1 ) {
+			$link = static function ( int $page, string $symbol, string $label, bool $enabled ) use ( $param ): string {
+				if ( ! $enabled ) {
+					return sprintf( '<span class="tablenav-pages-navspan button disabled" aria-hidden="true">%s</span>', esc_html( $symbol ) );
+				}
+				return sprintf( '<a class="button" href="%1$s"><span class="screen-reader-text">%2$s</span><span aria-hidden="true">%3$s</span></a>', esc_url( add_query_arg( $param, $page ) ), esc_html( $label ), esc_html( $symbol ) );
+			};
+			echo '<span class="pagination-links">';
+			echo $link( 1, '«', __( 'First page', 'dms' ), $current > 1 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in $link.
+			echo $link( $current - 1, '‹', __( 'Previous page', 'dms' ), $current > 1 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			/* translators: 1: current page, 2: total pages */
+			printf( '<span class="paging-input"><span class="tablenav-paging-text">%s</span></span>', esc_html( sprintf( __( '%1$s of %2$s', 'dms' ), number_format_i18n( $current ), number_format_i18n( $pages ) ) ) );
+			echo $link( $current + 1, '›', __( 'Next page', 'dms' ), $current < $pages ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			echo $link( $pages, '»', __( 'Last page', 'dms' ), $current < $pages ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			echo '</span>';
+		}
+		echo '</div></div>';
+	}
+
 	/** "3h", "1d 8h" since a UTC datetime (display only). */
 	public static function age( ?string $utc ): string {
 		if ( ! $utc ) {

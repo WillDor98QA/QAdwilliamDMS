@@ -8,6 +8,7 @@
 
 namespace DMS\Admin\Pages;
 
+use DMS\Admin\View;
 use DMS\Analytics\ReportService;
 use DMS\Plugin;
 
@@ -16,6 +17,8 @@ defined( 'ABSPATH' ) || exit;
 class ReportsPage {
 
 	public const SLUG = 'dms-reports';
+
+	public const PER_PAGE = 50;
 
 	public function __construct( private Plugin $plugin ) {
 	}
@@ -33,6 +36,8 @@ class ReportsPage {
 			$current = array_key_first( $catalog );
 		}
 		$report = $this->plugin->reports()->build( $current, $raw );
+		$total  = count( $report['rows'] );
+		$paged  = min( View::page_param(), max( 1, (int) ceil( $total / self::PER_PAGE ) ) );
 		?>
 		<div class="wrap dms-wrap">
 			<div class="dms-page-head">
@@ -94,7 +99,7 @@ class ReportsPage {
 				<?php if ( array() === $report['rows'] ) : ?>
 					<tr><td colspan="<?php echo esc_attr( (string) count( $report['headers'] ) ); ?>"><?php esc_html_e( 'No data for these filters.', 'dms' ); ?></td></tr>
 				<?php endif; ?>
-				<?php foreach ( array_slice( $report['rows'], 0, 200 ) as $row ) : ?>
+				<?php foreach ( array_slice( $report['rows'], ( $paged - 1 ) * self::PER_PAGE, self::PER_PAGE ) as $row ) : ?>
 					<tr>
 						<?php foreach ( $row as $cell ) : ?>
 							<td><?php echo esc_html( is_int( $cell ) ? number_format_i18n( $cell ) : (string) $cell ); ?></td>
@@ -103,14 +108,7 @@ class ReportsPage {
 				<?php endforeach; ?>
 				</tbody>
 			</table>
-			<?php if ( count( $report['rows'] ) > 200 ) : ?>
-				<p class="description">
-				<?php
-				/* translators: %d: total rows */
-				echo esc_html( sprintf( __( 'Showing the first 200 of %d rows. Export to see all.', 'dms' ), count( $report['rows'] ) ) );
-				?>
-				</p>
-			<?php endif; ?>
+			<?php View::pagination( $total, self::PER_PAGE, $paged ); ?>
 		</div>
 		<?php
 	}

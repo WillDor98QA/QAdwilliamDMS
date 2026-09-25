@@ -9,6 +9,7 @@
 namespace DMS\Admin\Pages;
 
 use DMS\Admin\AdminActions;
+use DMS\Admin\View;
 use DMS\Database\Tables;
 use DMS\Electoral\ElectoralLevel;
 use DMS\Plugin;
@@ -43,8 +44,32 @@ class UsersPage {
 		return array_map( 'intval', $wpdb->get_col( "SELECT user_id FROM {$roles} UNION SELECT user_id FROM {$profiles}" ) );
 	}
 
+	public const PER_PAGE = 20;
+
 	private function render_list(): void {
-		$ids = $this->managed_user_ids();
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only search.
+		$search  = trim( sanitize_text_field( (string) wp_unslash( $_GET['s'] ?? '' ) ) );
+		$managed = $this->managed_user_ids();
+		$ids     = array();
+		$total   = 0;
+		if ( array() !== $managed ) {
+			// The same managed users as before, now searched, sorted by name and paged.
+			$query = new \WP_User_Query(
+				array(
+					'include'        => $managed,
+					'fields'         => 'ID',
+					'orderby'        => 'display_name',
+					'order'          => 'ASC',
+					'number'         => self::PER_PAGE,
+					'paged'          => View::page_param(),
+					'count_total'    => true,
+					'search'         => '' !== $search ? '*' . $search . '*' : '',
+					'search_columns' => array( 'user_login', 'user_email', 'display_name' ),
+				)
+			);
+			$ids   = array_map( 'intval', (array) $query->get_results() );
+			$total = (int) $query->get_total();
+		}
 		?>
 		<div class="wrap dms-wrap">
 			<div class="dms-page-head">
@@ -60,11 +85,20 @@ class UsersPage {
 				</div>
 			</div>
 			<hr class="wp-header-end">
+			<form method="get" class="dms-filters">
+				<input type="hidden" name="page" value="dms-users">
+				<label for="dms-user-search"><?php esc_html_e( 'Search name, username or email', 'dms' ); ?></label>
+				<input type="search" id="dms-user-search" name="s" value="<?php echo esc_attr( $search ); ?>">
+				<?php submit_button( __( 'Search', 'dms' ), '', '', false ); ?>
+				<?php if ( '' !== $search ) : ?>
+					<a href="<?php echo esc_url( admin_url( 'admin.php?page=dms-users' ) ); ?>"><?php esc_html_e( 'Clear', 'dms' ); ?></a>
+				<?php endif; ?>
+			</form>
 			<table class="widefat striped">
 				<thead><tr><th scope="col"><?php esc_html_e( 'Name', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Email', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Roles', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Regions', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Status', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Open work', 'dms' ); ?></th></tr></thead>
 				<tbody>
 				<?php if ( array() === $ids ) : ?>
-					<tr><td colspan="6"><?php esc_html_e( 'No users yet.', 'dms' ); ?></td></tr>
+					<tr><td colspan="6" class="dms-empty"><?php echo esc_html( '' !== $search ? __( 'No users match this search.', 'dms' ) : __( 'No users yet.', 'dms' ) ); ?></td></tr>
 				<?php endif; ?>
 				<?php
 				foreach ( $ids as $id ) {
@@ -90,6 +124,7 @@ class UsersPage {
 				?>
 				</tbody>
 			</table>
+			<?php View::pagination( $total, self::PER_PAGE, View::page_param() ); ?>
 		</div>
 		<?php
 	}

@@ -82,8 +82,14 @@ class AssignmentExceptionRepository {
 		return (int) $n;
 	}
 
+	/** Number of open exceptions (for paging and counts). */
+	public function count_open(): int {
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (int) $this->db->get_var( $this->db->prepare( "SELECT COUNT(*) FROM {$this->table()} WHERE status = %s", self::STATUS_OPEN ) );
+	}
+
 	/** @return list<object> Open exceptions, oldest first, with registration number and region name. */
-	public function open_list( int $limit = 100 ): array {
+	public function open_list( int $limit = 100, int $offset = 0 ): array {
 		$regs    = Tables::name( Tables::REGISTRATIONS );
 		$regions = Tables::name( Tables::REGIONS );
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -92,9 +98,10 @@ class AssignmentExceptionRepository {
 				"SELECT e.*, r.registration_number, rg.name AS region_name FROM {$this->table()} e
 				INNER JOIN {$regs} r ON r.id = e.registration_id
 				INNER JOIN {$regions} rg ON rg.id = e.region_id
-				WHERE e.status = %s ORDER BY e.created_at ASC LIMIT %d",
+				WHERE e.status = %s ORDER BY e.created_at ASC, e.id ASC LIMIT %d OFFSET %d",
 				self::STATUS_OPEN,
-				$limit
+				$limit,
+				max( 0, $offset )
 			)
 		);
 	}

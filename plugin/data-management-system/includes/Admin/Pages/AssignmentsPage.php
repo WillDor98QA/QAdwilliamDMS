@@ -10,12 +10,15 @@ namespace DMS\Admin\Pages;
 
 use DMS\Admin\AdminActions;
 use DMS\Admin\AdminMenu;
+use DMS\Admin\View;
 use DMS\Electoral\ElectoralLevel;
 use DMS\Plugin;
 
 defined( 'ABSPATH' ) || exit;
 
 class AssignmentsPage {
+
+	public const PER_PAGE = 20;
 
 	public function __construct( private Plugin $plugin ) {
 	}
@@ -24,7 +27,10 @@ class AssignmentsPage {
 		if ( ! current_user_can( 'assignment.view' ) ) {
 			wp_die( esc_html__( 'You do not have permission to view this page.', 'dms' ), 403 );
 		}
-		$exceptions = $this->plugin->assignment_exceptions()->open_list( 200 );
+		$repo       = $this->plugin->assignment_exceptions();
+		$open_total = $repo->count_open();
+		$epage      = min( View::page_param( 'epage' ), max( 1, (int) ceil( $open_total / self::PER_PAGE ) ) );
+		$exceptions = $repo->open_list( self::PER_PAGE, ( $epage - 1 ) * self::PER_PAGE );
 		?>
 		<div class="wrap dms-wrap">
 			<div class="dms-page-head">
@@ -61,6 +67,7 @@ class AssignmentsPage {
 					<?php endforeach; ?>
 					</tbody>
 				</table>
+				<?php View::pagination( $open_total, self::PER_PAGE, $epage, 'epage' ); ?>
 			<?php endif; ?>
 
 			<h2><?php esc_html_e( 'Officer workload by region', 'dms' ); ?></h2>
@@ -68,26 +75,30 @@ class AssignmentsPage {
 				<thead><tr><th scope="col"><?php esc_html_e( 'Region', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Officer', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Active workload', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Last new assignment', 'dms' ); ?></th></tr></thead>
 				<tbody>
 				<?php
-				$any = false;
+				$rows = array();
 				foreach ( $this->plugin->electoral()->options( ElectoralLevel::REGION ) as $region ) {
 					foreach ( $this->plugin->assignments()->ranked_candidates( $region['id'] ) as $c ) {
-						$any  = true;
-						$user = get_user_by( 'id', $c['user_id'] );
-						printf(
-							'<tr><td>%1$s</td><td>%2$s</td><td>%3$d</td><td>%4$s</td></tr>',
-							esc_html( $region['name'] ),
-							esc_html( $user ? $user->display_name : '#' . $c['user_id'] ),
-							(int) $c['workload'],
-							esc_html( $c['last_assigned_at'] ? get_date_from_gmt( $c['last_assigned_at'], get_option( 'date_format' ) . ' H:i' ) : __( 'Never', 'dms' ) )
-						);
+						$rows[] = array( $region['name'], $c );
 					}
 				}
-				if ( ! $any ) {
+				$wpage = min( View::page_param( 'wpage' ), max( 1, (int) ceil( count( $rows ) / self::PER_PAGE ) ) );
+				foreach ( array_slice( $rows, ( $wpage - 1 ) * self::PER_PAGE, self::PER_PAGE ) as [ $region_name, $c ] ) {
+					$user = get_user_by( 'id', $c['user_id'] );
+					printf(
+						'<tr><td>%1$s</td><td>%2$s</td><td>%3$d</td><td>%4$s</td></tr>',
+						esc_html( $region_name ),
+						esc_html( $user ? $user->display_name : '#' . $c['user_id'] ),
+						(int) $c['workload'],
+						esc_html( $c['last_assigned_at'] ? get_date_from_gmt( $c['last_assigned_at'], get_option( 'date_format' ) . ' H:i' ) : __( 'Never', 'dms' ) )
+					);
+				}
+				if ( array() === $rows ) {
 					echo '<tr><td colspan="4">' . esc_html__( 'No active officers are configured. Create users with an officer role and at least one region.', 'dms' ) . '</td></tr>';
 				}
 				?>
 				</tbody>
 			</table>
+			<?php View::pagination( count( $rows ), self::PER_PAGE, $wpage, 'wpage' ); ?>
 		</div>
 		<?php
 	}

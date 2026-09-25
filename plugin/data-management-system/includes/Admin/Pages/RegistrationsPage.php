@@ -255,7 +255,7 @@ class RegistrationsPage {
 		?>
 		<aside class="dms-side-stack" aria-label="<?php esc_attr_e( 'Queue information', 'dms' ); ?>">
 			<?php if ( current_user_can( 'assignment.view' ) ) : ?>
-				<?php $open = count( $this->plugin->assignment_exceptions()->open_list( 200 ) ); ?>
+				<?php $open = $this->plugin->assignment_exceptions()->count_open(); ?>
 				<section class="dms-card dms-side-card">
 					<h2><?php esc_html_e( 'Assignment exceptions', 'dms' ); ?></h2>
 					<?php if ( $open > 0 ) : ?>

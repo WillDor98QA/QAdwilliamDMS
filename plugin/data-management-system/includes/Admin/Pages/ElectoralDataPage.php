@@ -24,6 +24,8 @@ class ElectoralDataPage {
 
 	public const SLUG = 'dms-electoral';
 
+	public const PER_PAGE = 50;
+
 	public function __construct( private Plugin $plugin ) {
 	}
 
@@ -119,7 +121,7 @@ class ElectoralDataPage {
 		<?php endif; ?>
 
 		<?php if ( current_user_can( 'imports.view_history' ) ) : ?>
-			<?php $history = $this->plugin->import_batches()->history( 1, 50 ); ?>
+			<?php $history = $this->plugin->import_batches()->history( View::page_param( 'hpage' ), self::PER_PAGE ); ?>
 			<section class="dms-card dms-card--flush" id="import-history" aria-labelledby="dms-history-title">
 				<div class="dms-card__head dms-card__head--padded">
 					<h2 id="dms-history-title"><?php esc_html_e( 'Import History', 'dms' ); ?></h2>
@@ -147,6 +149,7 @@ class ElectoralDataPage {
 					<?php endforeach; ?>
 					</tbody>
 				</table>
+				<?php View::pagination( (int) $history['total'], self::PER_PAGE, View::page_param( 'hpage' ), 'hpage' ); ?>
 			</section>
 		<?php endif; ?>
 		<?php
@@ -281,7 +284,10 @@ class ElectoralDataPage {
 		<table class="widefat">
 			<thead><tr><th scope="col"><?php esc_html_e( 'Type', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Code', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Change', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'Before', 'dms' ); ?></th><th scope="col"><?php esc_html_e( 'After', 'dms' ); ?></th></tr></thead>
 			<tbody>
-			<?php foreach ( array_slice( $items, 0, 500 ) as $item ) : ?>
+			<?php
+			$cpage = min( View::page_param( 'cpage' ), max( 1, (int) ceil( count( $items ) / self::PER_PAGE ) ) );
+			foreach ( array_slice( $items, ( $cpage - 1 ) * self::PER_PAGE, self::PER_PAGE ) as $item ) :
+				?>
 				<tr>
 					<td><?php echo esc_html( ElectoralLevel::from( $item->entity_type )->label() ); ?></td>
 					<td><code><?php echo esc_html( $item->record_code ); ?></code></td>
@@ -292,14 +298,7 @@ class ElectoralDataPage {
 			<?php endforeach; ?>
 			</tbody>
 		</table>
-		<?php if ( count( $items ) > 500 ) : ?>
-			<p class="description">
-			<?php
-			/* translators: %d: number of changes */
-			echo esc_html( sprintf( __( 'Showing the first 500 of %d changes.', 'dms' ), count( $items ) ) );
-			?>
-			</p>
-		<?php endif; ?>
+		<?php View::pagination( count( $items ), self::PER_PAGE, $cpage, 'cpage' ); ?>
 		</section>
 		<?php
 	}
