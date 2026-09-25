@@ -47,7 +47,8 @@
 			cancel.textContent = t.cancel;
 			ok.textContent = options.confirmLabel || t.confirm;
 			if ( options.danger ) {
-				ok.classList.add( 'dms-button-danger' );
+				ok.classList.add( 'dms-button-danger', 'dms-button-danger--solid' );
+				overlay.querySelector( '.dms-modal' ).classList.add( 'dms-modal--danger' );
 			}
 			document.body.appendChild( overlay );
 			document.body.classList.add( 'dms-modal-open' );
@@ -156,6 +157,7 @@
 			confirmDialog( { lines: [ t.confirmDelete ], danger: true, confirmLabel: t.deleteButton } ).then( function ( ok ) {
 				if ( ok ) {
 					flag.value = '1';
+					busy( form.querySelector( '[type="submit"]' ) );
 					form.submit();
 				}
 			} );
@@ -168,12 +170,44 @@
 				return;
 			}
 			e.preventDefault();
-			confirmDialog( { lines: [ form.getAttribute( 'data-dms-confirm' ) ], danger: true } ).then( function ( ok ) {
+			confirmDialog( {
+				lines: [ form.getAttribute( 'data-dms-confirm' ) ],
+				danger: form.getAttribute( 'data-dms-confirm-tone' ) !== 'primary',
+				confirmLabel: form.getAttribute( 'data-dms-confirm-label' ) || undefined,
+			} ).then( function ( ok ) {
 				if ( ok ) {
 					confirmed = true;
+					busy( form.querySelector( '[type="submit"]' ) );
 					form.submit();
 				}
 			} );
+		} );
+	} );
+
+	// ---- Busy state: one click, one request ---------------------------------
+	// The button shows progress and is disabled until the page changes. It is
+	// released after a while in case the response was a file download.
+	function busy( button ) {
+		if ( ! button ) {
+			return;
+		}
+		button.classList.add( 'is-busy' );
+		button.setAttribute( 'aria-busy', 'true' );
+		window.setTimeout( function () {
+			button.disabled = true;
+		}, 0 );
+		window.setTimeout( function () {
+			button.disabled = false;
+			button.classList.remove( 'is-busy' );
+			button.removeAttribute( 'aria-busy' );
+		}, 8000 );
+	}
+	document.querySelectorAll( '.dms-app form[method="post"]' ).forEach( function ( form ) {
+		form.addEventListener( 'submit', function ( e ) {
+			if ( e.defaultPrevented ) {
+				return;
+			}
+			busy( e.submitter || form.querySelector( '[type="submit"]' ) );
 		} );
 	} );
 

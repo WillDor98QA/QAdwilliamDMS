@@ -38,14 +38,23 @@ class RegistrationsTable extends \WP_List_Table {
 	public function get_columns(): array {
 		$columns = array(
 			'registration_number' => __( 'Registration', 'dms' ),
-			'name'                => __( 'Name', 'dms' ),
-			'phone'               => __( 'Phone', 'dms' ),
+			'name'                => __( 'Applicant', 'dms' ),
 			'organization'        => __( 'Organization', 'dms' ),
 			'location'            => __( 'Region / Constituency', 'dms' ),
-			'status'              => __( 'Status', 'dms' ),
-			'officer'             => __( 'Assigned Officer', 'dms' ),
-			'submitted_at'        => __( 'Submitted', 'dms' ),
 		);
+		// Each area shows the fields that matter there (all already on the row).
+		if ( 'approved' === $this->area ) {
+			$columns['approved'] = __( 'Approved', 'dms' );
+		} elseif ( 'bin' === $this->area ) {
+			$columns['disapproval'] = __( 'Disapproval reason', 'dms' );
+			$columns['retention']   = __( 'Retention', 'dms' );
+		} else {
+			// Queue areas follow the reference's work-queue columns; organization stays on the record.
+			unset( $columns['organization'] );
+			$columns['status']  = __( 'Status', 'dms' );
+			$columns['officer'] = __( 'Assigned Officer', 'dms' );
+			$columns['waiting'] = __( 'Waiting', 'dms' );
+		}
 		if ( array() !== $this->get_bulk_actions() ) {
 			$columns = array( 'cb' => '<input type="checkbox" />' ) + $columns;
 		}
@@ -58,6 +67,9 @@ class RegistrationsTable extends \WP_List_Table {
 			'name'                => array( 'last_name', false ),
 			'status'              => array( 'status', false ),
 			'submitted_at'        => array( 'submitted_at', true ),
+			'waiting'             => array( 'submitted_at', true ),
+			'approved'            => array( 'approved_at', true ),
+			'disapproval'         => array( 'disapproved_at', true ),
 		);
 	}
 
@@ -110,12 +122,35 @@ class RegistrationsTable extends \WP_List_Table {
 	}
 
 	protected function column_name( $item ): string {
-		return esc_html( trim( implode( ' ', array_filter( array( $item->first_name, $item->middle_name, $item->last_name ) ) ) ) );
+		$name  = trim( implode( ' ', array_filter( array( $item->first_name, $item->middle_name, $item->last_name ) ) ) );
+		$badge = (int) $item->phone_verified ? '' : ' <span class="dms-badge dms-badge--muted">' . esc_html__( 'unverified', 'dms' ) . '</span>';
+		return '<span class="dms-person">' . View::avatar( $name ) . '<span><strong>' . esc_html( $name ) . '</strong><br><span class="description">' . esc_html( (string) $item->phone_normalized ) . '</span>' . $badge . '</span></span>';
 	}
 
-	protected function column_phone( $item ): string {
-		$badge = (int) $item->phone_verified ? '' : ' <span class="dms-badge dms-badge--muted">' . esc_html__( 'unverified', 'dms' ) . '</span>';
-		return esc_html( (string) $item->phone_normalized ) . $badge;
+	protected function column_waiting( $item ): string {
+		return '<strong>' . esc_html( View::age( $item->submitted_at ) ) . '</strong><br><span class="description">' . esc_html( View::short_date( $item->submitted_at ) ) . '</span>';
+	}
+
+	protected function column_approved( $item ): string {
+		$by = $item->approved_by ? get_user_by( 'id', (int) $item->approved_by ) : null;
+		return esc_html( View::short_date( $item->approved_at ) ) . ( $by ? '<br><span class="description">' . esc_html( $by->display_name ) . '</span>' : '' );
+	}
+
+	protected function column_disapproval( $item ): string {
+		return '<span class="dms-reason-cell">' . esc_html( (string) $item->disapproval_reason ) . '</span><br><span class="description">' . esc_html( View::short_date( $item->disapproved_at ) ) . '</span>';
+	}
+
+	/** Days until automatic deletion (display of the existing retention rule). */
+	protected function column_retention( $item ): string {
+		if ( ! $item->disapproved_at ) {
+			return '';
+		}
+		$days    = $this->plugin->page_registrations()->retention_days();
+		$elapsed = intdiv( max( 0, time() - (int) strtotime( $item->disapproved_at . ' UTC' ) ), DAY_IN_SECONDS );
+		$left    = max( 0, $days - $elapsed );
+		/* translators: %d: days */
+		$label = 0 === $left ? __( 'Due for deletion', 'dms' ) : sprintf( _n( '%d day left', '%d days left', $left, 'dms' ), $left );
+		return sprintf( '<span class="dms-pill dms-pill--%1$s">%2$s</span>', $left <= 7 ? 'red' : 'amber', esc_html( $label ) );
 	}
 
 	protected function column_organization( $item ): string {
@@ -133,10 +168,6 @@ class RegistrationsTable extends \WP_List_Table {
 
 	protected function column_officer( $item ): string {
 		return $item->officer_name ? esc_html( $item->officer_name ) : '<span aria-hidden="true">—</span><span class="screen-reader-text">' . esc_html__( 'Unassigned', 'dms' ) . '</span>';
-	}
-
-	protected function column_submitted_at( $item ): string {
-		return esc_html( get_date_from_gmt( $item->submitted_at, get_option( 'date_format' ) . ' H:i' ) );
 	}
 
 	public function no_items(): void {
@@ -175,7 +206,12 @@ class RegistrationsTable extends \WP_List_Table {
 		}
 		echo '</select>';
 
-		if ( count( RegistrationFilter::AREAS[ $this->area ] ) > 1 ) {
+		if ( 'holding' === $this->area ) {
+			// The Holding Area's status tabs set this filter; keep it when other filters are applied.
+			if ( ! empty( $q['status'] ) ) {
+				printf( '<input type="hidden" name="status" value="%s">', esc_attr( (string) $q['status'] ) );
+			}
+		} elseif ( count( RegistrationFilter::AREAS[ $this->area ] ) > 1 ) {
 			printf( '<label class="screen-reader-text" for="dms-filter-status">%s</label>', esc_html__( 'Status', 'dms' ) );
 			echo '<select name="status" id="dms-filter-status"><option value="">' . esc_html__( 'All statuses', 'dms' ) . '</option>';
 			foreach ( RegistrationFilter::AREAS[ $this->area ] as $s ) {
