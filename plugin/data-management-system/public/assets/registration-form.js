@@ -17,6 +17,13 @@
 		return String( s || '' ).replace( '%s', v );
 	}
 
+	function fmtN( s ) {
+		var args = Array.prototype.slice.call( arguments, 1 );
+		return String( s || '' ).replace( /%(\d)\$s/g, function ( m, i ) {
+			return args[ i - 1 ];
+		} );
+	}
+
 	function api( path, options ) {
 		return fetch( cfg.restBase + path, Object.assign( { credentials: 'same-origin' }, options || {} ) ).then( function ( res ) {
 			return res.json().catch( function () {
@@ -41,6 +48,7 @@
 					if ( ! state.otpRequestId ) {
 						submitBtn.textContent = r.body.otp && r.body.otp.enabled ? t.continueOtp : t.submit;
 					}
+					setOtpOn( !! ( r.body.otp && r.body.otp.enabled ) );
 				}
 			} );
 		}
@@ -77,11 +85,177 @@
 				}
 			} );
 			if ( first ) {
+				reveal( first );
 				first.focus();
 			}
 			if ( ! first || errors.form ) {
 				showAlert( errors.form || t.fixErrors );
 			}
+		}
+
+		// ---- Steps (presentation only) ------------------------------------
+		// Sections become steps; consent and the captcha join the last one.
+		// Everything is still sent in one request by the existing submit, and
+		// the server still validates everything. Without JavaScript the form
+		// stays on one page. The Verify step exists only while OTP is on.
+		var portal = form.parentNode;
+		var stepper = portal.querySelector( '[data-dms-stepper]' );
+		var stepStatus = portal.querySelector( '[data-dms-step-status]' );
+		var prevBtn = form.querySelector( '[data-dms-prev]' );
+		var nextBtn = form.querySelector( '[data-dms-next]' );
+		var steps = [];
+		form.querySelectorAll( 'fieldset.dms-section[data-section]' ).forEach( function ( fs ) {
+			if ( fs.getAttribute( 'data-section' ) === 'consent' && steps.length ) {
+				steps[ steps.length - 1 ].els.push( fs );
+				return;
+			}
+			steps.push( { label: fs.querySelector( 'legend' ).textContent.trim(), els: [ fs ] } );
+		} );
+		var captchaBox = form.querySelector( '.dms-captcha' );
+		if ( captchaBox && steps.length ) {
+			steps[ steps.length - 1 ].els.push( captchaBox );
+		}
+		var stepped = steps.length > 1 && !! stepper && !! prevBtn && !! nextBtn;
+		var lastData = steps.length - 1;
+		var current = 0;
+		var verifying = false;
+		var otpOn = !! form.querySelector( '[data-dms-otp]' );
+
+		function otpFieldset() {
+			return form.querySelector( '[data-dms-otp]' );
+		}
+
+		function renderStepper( done ) {
+			if ( ! stepped ) {
+				return;
+			}
+			var labels = steps.map( function ( s ) {
+				return s.label;
+			} );
+			if ( otpOn ) {
+				labels.push( t.stepVerify );
+			}
+			var active = verifying ? steps.length : current;
+			stepper.innerHTML = '';
+			labels.forEach( function ( label, i ) {
+				var li = document.createElement( 'li' );
+				li.className = 'dms-step' + ( done || i < active ? ' is-done' : '' ) + ( ! done && i === active ? ' is-active' : '' );
+				if ( ! done && i === active ) {
+					li.setAttribute( 'aria-current', 'step' );
+				}
+				var num = document.createElement( 'span' );
+				num.className = 'dms-step__num';
+				num.setAttribute( 'aria-hidden', 'true' );
+				num.textContent = String( i + 1 );
+				var text = document.createElement( 'span' );
+				text.className = 'dms-step__label';
+				text.textContent = label;
+				li.appendChild( num );
+				li.appendChild( text );
+				stepper.appendChild( li );
+			} );
+			stepper.hidden = false;
+			stepStatus.textContent = done ? '' : fmtN( t.stepStatus, active + 1, labels.length, labels[ active ] );
+		}
+
+		function layout( focus ) {
+			if ( ! stepped ) {
+				return;
+			}
+			steps.forEach( function ( s, i ) {
+				s.els.forEach( function ( el ) {
+					el.hidden = verifying || i !== current;
+				} );
+			} );
+			var otp = otpFieldset();
+			if ( otp ) {
+				otp.hidden = ! verifying;
+			}
+			var intro = form.querySelector( '.dms-form-intro' );
+			if ( intro ) {
+				intro.hidden = verifying;
+			}
+			prevBtn.hidden = ! verifying && current === 0;
+			nextBtn.hidden = verifying || current >= lastData;
+			submitBtn.hidden = ! verifying && current < lastData;
+			if ( state.otpRequestId ) {
+				submitBtn.textContent = verifying ? t.verifySubmit : t.continueOtp;
+			}
+			renderStepper( false );
+			if ( focus ) {
+				var target = verifying ? otp && otp.querySelector( '[name="otp_code"]' ) : steps[ current ].els[ 0 ].querySelector( 'legend' );
+				if ( target ) {
+					target.focus( { preventScroll: true } );
+				}
+				portal.scrollIntoView( { block: 'start' } );
+			}
+		}
+
+		function show( index, focus ) {
+			current = Math.max( 0, Math.min( index, lastData ) );
+			verifying = false;
+			layout( focus );
+		}
+
+		function showVerify( focus ) {
+			otpOn = true;
+			verifying = true;
+			layout( focus );
+		}
+
+		function setOtpOn( on ) {
+			if ( otpOn !== on && ! state.otpRequestId ) {
+				otpOn = on;
+				renderStepper( false );
+			}
+		}
+
+		// Show the step that holds a field (used for client and server errors).
+		function reveal( field ) {
+			if ( ! stepped ) {
+				return;
+			}
+			var otp = otpFieldset();
+			if ( otp && otp.contains( field ) ) {
+				showVerify( false );
+				return;
+			}
+			for ( var i = 0; i < steps.length; i++ ) {
+				var inStep = steps[ i ].els.some( function ( el ) {
+					return el.contains( field );
+				} );
+				if ( inStep ) {
+					show( i, false );
+					return;
+				}
+			}
+		}
+
+		function next() {
+			clearErrors();
+			var invalid = {};
+			steps[ current ].els.forEach( function ( el ) {
+				el.querySelectorAll( 'input, select, textarea' ).forEach( function ( f ) {
+					if ( f.name && ! f.disabled && ! f.checkValidity() ) {
+						invalid[ f.name ] = f.validationMessage;
+					}
+				} );
+			} );
+			if ( Object.keys( invalid ).length ) {
+				showFieldErrors( invalid );
+				return;
+			}
+			show( current + 1, true );
+		}
+
+		if ( stepped ) {
+			form.classList.add( 'is-stepped' );
+			nextBtn.addEventListener( 'click', next );
+			prevBtn.addEventListener( 'click', function () {
+				clearErrors();
+				show( verifying ? lastData : current - 1, true );
+			} );
+			show( 0, false );
 		}
 
 		// A field's error clears as soon as the person changes it (UI-01).
@@ -196,6 +370,7 @@
 			step.hidden = false;
 			step.querySelector( '[data-dms-otp-message]' ).textContent = body.message;
 			submitBtn.textContent = t.verifySubmit;
+			showVerify( false );
 			startResendTimer( body.resend_after );
 			step.querySelector( '[name="otp_code"]' ).focus();
 		}
@@ -244,6 +419,12 @@
 				if ( r.status === 201 ) {
 					form.hidden = true;
 					success.querySelector( '[data-dms-success-message]' ).textContent = fmt( t.success, r.body.registration_number );
+					var regNo = success.querySelector( '[data-dms-reg-no]' );
+					if ( regNo ) {
+						regNo.textContent = r.body.registration_number;
+						regNo.hidden = false;
+					}
+					renderStepper( true );
 					success.hidden = false;
 					success.focus();
 					return;
@@ -270,6 +451,7 @@
 				if ( r.status === 409 && r.body.code === 'dms_otp_consumed' ) {
 					state.otpRequestId = null;
 					submitBtn.textContent = t.continueOtp;
+					show( lastData, false );
 				}
 				showAlert( ( r.body && r.body.message ) || t.genericError );
 			} ).catch( function () {
@@ -282,7 +464,15 @@
 
 		form.addEventListener( 'submit', function ( e ) {
 			e.preventDefault();
+			if ( stepped && ! verifying && current < lastData ) {
+				next(); // Enter pressed on an earlier step.
+				return;
+			}
 			clearErrors();
+			if ( stepped && ! verifying && state.otpRequestId ) {
+				showVerify( true ); // A code was already sent; go back to entering it.
+				return;
+			}
 			if ( ! form.checkValidity() ) {
 				var invalid = {};
 				form.querySelectorAll( ':invalid' ).forEach( function ( el ) {
@@ -325,7 +515,13 @@
 			}
 			success.hidden = true;
 			success.querySelector( '[data-dms-success-message]' ).textContent = '';
+			var regNo = success.querySelector( '[data-dms-reg-no]' );
+			if ( regNo ) {
+				regNo.hidden = true;
+				regNo.textContent = '';
+			}
 			form.hidden = false;
+			show( 0, false );
 			refreshConfig();
 			var first = form.querySelector( 'input:not([type="hidden"]):not([tabindex="-1"]), select' );
 			if ( first ) {

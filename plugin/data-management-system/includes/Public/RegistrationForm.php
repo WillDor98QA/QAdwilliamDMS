@@ -49,7 +49,11 @@ class RegistrationForm {
 
 		ob_start();
 		?>
+		<div class="dms-portal">
+		<ol class="dms-stepper" data-dms-stepper aria-label="<?php esc_attr_e( 'Registration steps', 'dms' ); ?>" hidden></ol>
+		<p class="dms-sr-only" data-dms-step-status aria-live="polite"></p>
 		<form class="dms-form" data-dms-form novalidate>
+			<p class="dms-form-intro"><?php esc_html_e( 'Please provide your information accurately. Fields marked', 'dms' ); ?> <span class="dms-required" aria-hidden="true">*</span><span class="dms-sr-only"><?php esc_html_e( 'with an asterisk', 'dms' ); ?></span> <?php esc_html_e( 'are required.', 'dms' ); ?></p>
 			<div class="dms-alert" data-dms-alert role="alert" aria-live="assertive" tabindex="-1" hidden></div>
 			<?php
 			$fields = $this->form->enabled_fields();
@@ -63,15 +67,15 @@ class RegistrationForm {
 				if ( array() === $in_section ) {
 					continue;
 				}
-				printf( '<fieldset class="dms-section" data-section="%1$s"><legend>%2$s</legend>', esc_attr( $section ), esc_html( $title ) );
+				printf( '<fieldset class="dms-section" data-section="%1$s"><legend tabindex="-1">%2$s</legend><div class="dms-fields">', esc_attr( $section ), esc_html( $title ) );
 				foreach ( $in_section as $field ) {
 					$this->render_field( $field );
 				}
-				echo '</fieldset>';
+				echo '</div></fieldset>';
 			}
 			?>
 			<fieldset class="dms-section" data-section="consent">
-				<legend><?php esc_html_e( 'Consent', 'dms' ); ?></legend>
+				<legend tabindex="-1"><?php esc_html_e( 'Consent', 'dms' ); ?></legend>
 				<div class="dms-field dms-field--checkbox">
 					<input type="checkbox" id="dms-consent" name="consent" value="1" required aria-describedby="dms-consent-error">
 					<label for="dms-consent"><?php esc_html_e( 'I consent to the collection and processing of my information for the purposes described in the privacy notice.', 'dms' ); ?> <span class="dms-required" aria-hidden="true">*</span></label>
@@ -96,17 +100,23 @@ class RegistrationForm {
 			<?php endif; ?>
 
 			<div class="dms-actions">
+				<button type="button" class="dms-button-secondary" data-dms-prev hidden><?php esc_html_e( 'Back', 'dms' ); ?></button>
+				<button type="button" class="dms-submit" data-dms-next hidden><?php esc_html_e( 'Continue', 'dms' ); ?></button>
 				<button type="submit" class="dms-submit" data-dms-submit><?php echo esc_html( $otp_on ? __( 'Continue to phone verification', 'dms' ) : __( 'Submit registration', 'dms' ) ); ?></button>
 			</div>
 		</form>
 		<div class="dms-success" data-dms-success tabindex="-1" hidden>
+			<span class="dms-success__icon" aria-hidden="true"></span>
+			<h2 class="dms-success__title"><?php esc_html_e( 'Registration received', 'dms' ); ?></h2>
 			<p class="dms-success-message" data-dms-success-message role="status"></p>
+			<p class="dms-reg-no" data-dms-reg-no hidden></p>
 			<div class="dms-success-actions">
 				<button type="button" class="dms-submit" data-dms-again><?php esc_html_e( 'Register another person', 'dms' ); ?></button>
 				<a class="dms-home-link" href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php esc_html_e( 'Return to home', 'dms' ); ?></a>
 			</div>
 		</div>
 		<template data-dms-otp-template><?php echo $this->otp_step_markup(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside. ?></template>
+		</div>
 		<?php
 		return (string) ob_get_clean();
 	}
@@ -139,7 +149,8 @@ class RegistrationForm {
 		$required = (bool) $field['required'];
 		$attrs    = sprintf( 'id="%1$s" name="%2$s" aria-describedby="%3$s"%4$s', esc_attr( $id ), esc_attr( $key ), esc_attr( $error_id ), $required ? ' required aria-required="true"' : '' );
 
-		echo '<div class="dms-field">';
+		$wide = 'textarea' === $field['type'] || 'polling_station_id' === $key;
+		echo '<div class="dms-field' . ( $wide ? ' dms-field--wide' : '' ) . '">';
 		printf(
 			'<label for="%1$s">%2$s%3$s</label>',
 			esc_attr( $id ),
@@ -203,6 +214,9 @@ class RegistrationForm {
 				'restBase' => esc_url_raw( rest_url( PublicRegistrationController::NAMESPACE . '/public/' ) ),
 				'i18n'     => array(
 					'submit'       => __( 'Submit registration', 'dms' ),
+					'stepVerify'   => __( 'Verify', 'dms' ),
+					/* translators: 1: step number, 2: total steps, 3: step name */
+					'stepStatus'   => __( 'Step %1$s of %2$s: %3$s', 'dms' ),
 					'continueOtp'  => __( 'Continue to phone verification', 'dms' ),
 					'verifySubmit' => __( 'Verify and submit', 'dms' ),
 					'working'      => __( 'Please wait…', 'dms' ),

@@ -76,6 +76,15 @@ final class RegistrationFormRenderTest extends \WP_UnitTestCase {
 		$this->assertStringContainsString( 'href="' . esc_url( home_url( '/' ) ) . '">Return to home</a>', $box );
 	}
 
+	public function test_step_controls_render_hidden_until_the_script_takes_over(): void {
+		$html = do_shortcode( '[dms_registration_form]' );
+		$this->assertStringContainsString( '<ol class="dms-stepper" data-dms-stepper aria-label="Registration steps" hidden></ol>', $html );
+		$this->assertMatchesRegularExpression( '#<button type="button"[^>]*data-dms-prev hidden>Back</button>#', $html );
+		$this->assertMatchesRegularExpression( '#<button type="button"[^>]*data-dms-next hidden>Continue</button>#', $html );
+		$this->assertMatchesRegularExpression( '#<button type="submit"[^>]*data-dms-submit>#', $html, 'Submit stays visible without JavaScript' );
+		$this->assertStringContainsString( 'data-dms-step-status aria-live="polite"', $html );
+	}
+
 	public function test_regions_rendered_but_lower_levels_load_on_demand(): void {
 		$form = $this->form_html();
 		$this->assertStringContainsString( 'Region ', $form );
