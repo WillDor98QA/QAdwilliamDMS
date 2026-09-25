@@ -29,6 +29,8 @@ class AdminMenu {
 		'bin'          => 'dms-bin',
 	);
 
+	private ?AppShell $shell = null;
+
 	public function __construct( private Plugin $plugin ) {
 	}
 
@@ -36,6 +38,12 @@ class AdminMenu {
 		add_action( 'admin_menu', array( $this, 'menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'assets' ) );
 		add_action( 'admin_notices', array( Notices::class, 'render' ) );
+		add_filter( 'admin_body_class', array( $this->shell(), 'body_class' ) );
+	}
+
+	public function shell(): AppShell {
+		$this->shell ??= new AppShell( $this->plugin );
+		return $this->shell;
 	}
 
 	/** @return list<array{slug:string,title:string,callback:callable,visible:bool}> In menu order. */
@@ -144,6 +152,10 @@ class AdminMenu {
 		$visible = array_values( array_filter( $this->pages(), static fn( array $page ): bool => $page['visible'] ) );
 		if ( array() === $visible ) {
 			return;
+		}
+		// Each page renders inside the DMS app shell, whose sidebar lists these same pages.
+		foreach ( $visible as $i => $page ) {
+			$visible[ $i ]['callback'] = $this->shell()->wrap( $visible, $page['slug'], $page['callback'] );
 		}
 		// The top-level item opens the first page this user may see.
 		add_menu_page( __( 'Data Management', 'dms' ), __( 'Data Management', 'dms' ), 'read', $visible[0]['slug'], $visible[0]['callback'], 'dashicons-clipboard', 26 );

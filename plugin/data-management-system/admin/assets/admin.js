@@ -208,6 +208,56 @@
 				} );
 		} );
 	}
+	// ---- Tables scroll inside their own frame instead of widening the page --
+	document.querySelectorAll( '.dms-app table.widefat' ).forEach( function ( table ) {
+		if ( table.parentNode.classList.contains( 'dms-table-scroll' ) ) {
+			return;
+		}
+		var frame = document.createElement( 'div' );
+		frame.className = 'dms-table-scroll';
+		table.parentNode.insertBefore( frame, table );
+		frame.appendChild( table );
+	} );
+
+	// ---- App shell: off-canvas navigation on small screens ------------------
+	var app = document.querySelector( '[data-dms-app]' );
+	var navToggle = app && app.querySelector( '[data-dms-nav-toggle]' );
+	if ( navToggle ) {
+		var sidebar = app.querySelector( '.dms-sidebar' );
+		var backdrop = app.querySelector( '[data-dms-nav-close]' );
+		var setNav = function ( open ) {
+			app.classList.toggle( 'is-nav-open', open );
+			navToggle.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
+			backdrop.hidden = ! open;
+			if ( open ) {
+				var current = sidebar.querySelector( '.is-active' ) || sidebar.querySelector( 'a' );
+				if ( current ) {
+					current.focus();
+				}
+			} else {
+				navToggle.focus();
+			}
+		};
+		navToggle.addEventListener( 'click', function () {
+			setNav( ! app.classList.contains( 'is-nav-open' ) );
+		} );
+		backdrop.addEventListener( 'click', function () {
+			setNav( false );
+		} );
+		document.addEventListener( 'keydown', function ( e ) {
+			if ( e.key === 'Escape' && app.classList.contains( 'is-nav-open' ) ) {
+				setNav( false );
+			}
+		} );
+		window.matchMedia( '(min-width: 783px)' ).addEventListener( 'change', function ( mq ) {
+			if ( mq.matches && app.classList.contains( 'is-nav-open' ) ) {
+				app.classList.remove( 'is-nav-open' );
+				navToggle.setAttribute( 'aria-expanded', 'false' );
+				backdrop.hidden = true;
+			}
+		} );
+	}
+
 	var region = document.querySelector( '[data-dms-cascade="region"]' );
 	var constituency = document.querySelector( '[data-dms-cascade="constituency"]' );
 	var station = document.querySelector( '[data-dms-cascade="polling_station"]' );
